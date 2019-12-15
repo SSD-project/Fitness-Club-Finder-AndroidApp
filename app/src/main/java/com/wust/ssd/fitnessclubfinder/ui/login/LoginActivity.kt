@@ -10,6 +10,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.tasks.Task
+import com.wust.ssd.fitnessclubfinder.ui.main.MainActivity
 import com.wust.ssd.fitnessclubfinder.di.Injectable
 import com.wust.ssd.fitnessclubfinder.R
 import javax.inject.Inject
@@ -54,6 +55,7 @@ class LoginActivity : AppCompatActivity(), Injectable {
     private fun handleSignInResult(completedTask: Task<GoogleSignInAccount>) = try {
         completedTask.getResult(ApiException::class.java)
         finish()
+        startActivity(Intent(this, MainActivity::class.java))
 
     } catch (e: ApiException) {
         Log.w("ERROR", "signInResult: failed code=" + e.statusCode)

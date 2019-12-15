@@ -14,7 +14,7 @@ import dagger.Provides
 import javax.inject.Singleton
 
 
-@Module(subcomponents = [LoginActivityComponent::class])
+@Module(subcomponents = [LoginActivityComponent::class, MainActivityComponent::class])
 class AppModule {
 
     @Provides

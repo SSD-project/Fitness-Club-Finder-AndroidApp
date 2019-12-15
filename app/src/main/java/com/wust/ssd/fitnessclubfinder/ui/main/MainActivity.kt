@@ -1,5 +1,6 @@
-package com.wust.ssd.fitnessclubfinder.ui.MainActivity
+package com.wust.ssd.fitnessclubfinder.ui.main
 
+import android.content.Intent
 import android.os.Bundle
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
@@ -13,10 +14,19 @@ import com.google.android.material.navigation.NavigationView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import android.view.Menu
+import android.widget.Button
+import android.widget.Toast
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.wust.ssd.fitnessclubfinder.di.Injectable
 import com.wust.ssd.fitnessclubfinder.R
+import com.wust.ssd.fitnessclubfinder.ui.login.LoginActivity
+import javax.inject.Inject
 
 class MainActivity : AppCompatActivity(), Injectable {
+
+    @Inject
+    lateinit var mGoogleSignInClient: GoogleSignInClient
+
 
     private lateinit var appBarConfiguration: AppBarConfiguration
 
@@ -46,6 +56,12 @@ class MainActivity : AppCompatActivity(), Injectable {
                 R.id.nav_send
             ), drawerLayout
         )
+
+        val b = findViewById<Button>(R.id.logout_button)
+        b.setOnClickListener {
+            if (it.id == R.id.logout_button)
+                signOut()
+        }
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
     }
@@ -60,4 +76,14 @@ class MainActivity : AppCompatActivity(), Injectable {
         val navController = findNavController(R.id.nav_host_fragment)
         return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
     }
+
+    private fun signOut() =
+        mGoogleSignInClient.signOut()?.addOnCompleteListener {
+            Toast
+                .makeText(this, "Signed out successfully", Toast.LENGTH_SHORT)
+                .show()
+
+            finish()
+            startActivity(Intent(this, LoginActivity::class.java))
+        }
 }
