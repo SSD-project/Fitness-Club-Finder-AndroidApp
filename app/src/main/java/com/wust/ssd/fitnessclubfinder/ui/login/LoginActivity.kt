@@ -1,6 +1,5 @@
-package com.wust.ssd.fitnessclubfinder
+package com.wust.ssd.fitnessclubfinder.ui.login
 
-import android.app.Application
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -11,10 +10,8 @@ import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.tasks.Task
-import dagger.android.AndroidInjector
-import dagger.android.HasAndroidInjector
-import dagger.android.support.AndroidSupportInjection
-import dagger.android.support.AndroidSupportInjectionModule
+import com.wust.ssd.fitnessclubfinder.di.Injectable
+import com.wust.ssd.fitnessclubfinder.R
 import javax.inject.Inject
 
 
@@ -29,21 +26,20 @@ class LoginActivity : AppCompatActivity(), Injectable {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(R.layout.activity_login)
 
 
 
         val signInButton = findViewById<Button>(R.id.sign_in_button)
         signInButton.setOnClickListener {
-            Log.e("LoginActivity", mGoogleSignInClient.instanceId.toString())
             when (it.id) {
                 R.id.sign_in_button -> signIn()
             }
         }
     }
 
-    fun signIn() =
-        startActivityForResult(mGoogleSignInClient?.signInIntent, RC_SIGN_IN)
+    private fun signIn() =
+        startActivityForResult(mGoogleSignInClient.signInIntent, RC_SIGN_IN)
 
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -55,10 +51,9 @@ class LoginActivity : AppCompatActivity(), Injectable {
         }
     }
 
-    fun handleSignInResult(completedTask: Task<GoogleSignInAccount>) = try {
-
-        val intent = Intent(this, AugmentedRealityActivity::class.java)
-        startActivity(intent)
+    private fun handleSignInResult(completedTask: Task<GoogleSignInAccount>) = try {
+        completedTask.getResult(ApiException::class.java)
+        finish()
 
     } catch (e: ApiException) {
         Log.w("ERROR", "signInResult: failed code=" + e.statusCode)

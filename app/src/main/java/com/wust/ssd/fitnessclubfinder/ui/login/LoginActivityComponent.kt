@@ -1,9 +1,9 @@
-package com.wust.ssd.fitnessclubfinder
+package com.wust.ssd.fitnessclubfinder.ui.login
 
 import dagger.Subcomponent
 import dagger.android.AndroidInjector
 
-@Subcomponent//(modules = [AppModule::class])
+@Subcomponent
 interface LoginActivityComponent: AndroidInjector<LoginActivity>{
     @Subcomponent.Factory
     interface Factory: AndroidInjector.Factory<LoginActivity>
