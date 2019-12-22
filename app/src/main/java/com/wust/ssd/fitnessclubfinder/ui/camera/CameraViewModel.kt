@@ -1,13 +1,13 @@
-package com.wust.ssd.fitnessclubfinder.ui.home
+package com.wust.ssd.fitnessclubfinder.ui.camera
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 
-class HomeViewModel : ViewModel() {
+class CameraViewModel : ViewModel() {
 
     private val _text = MutableLiveData<String>().apply {
-        value = "This is home Fragment"
+        value = "This is camera Fragment"
     }
     val text: LiveData<String> = _text
 }

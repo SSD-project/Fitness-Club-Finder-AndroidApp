@@ -1,13 +1,13 @@
-package com.wust.ssd.fitnessclubfinder.ui.gallery
+package com.wust.ssd.fitnessclubfinder.ui.searchClub
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 
-class GalleryViewModel : ViewModel() {
+class SearchClubViewModel : ViewModel() {
 
     private val _text = MutableLiveData<String>().apply {
-        value = "This is gallery Fragment"
+        value = "This is Search club Fragment"
     }
     val text: LiveData<String> = _text
 }

@@ -1,4 +1,4 @@
-package com.wust.ssd.fitnessclubfinder.ui.home
+package com.wust.ssd.fitnessclubfinder.ui.searchClub
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -10,22 +10,25 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import com.wust.ssd.fitnessclubfinder.R
 
-class HomeFragment : Fragment() {
+class SearchClubFragment : Fragment() {
 
-    private lateinit var homeViewModel: HomeViewModel
+
+
+    private lateinit var searchClubViewModel: SearchClubViewModel
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        homeViewModel =
-            ViewModelProviders.of(this).get(HomeViewModel::class.java)
-        val root = inflater.inflate(R.layout.fragment_home, container, false)
-        val textView: TextView = root.findViewById(R.id.text_home)
-        homeViewModel.text.observe(this, Observer {
+        searchClubViewModel =
+            ViewModelProviders.of(this).get(SearchClubViewModel::class.java)
+        val root = inflater.inflate(R.layout.fragment_search_club, container, false)
+        val textView: TextView = root.findViewById(R.id.text_search_club)
+        searchClubViewModel.text.observe(this, Observer {
             textView.text = it
         })
+
         return root
     }
 }

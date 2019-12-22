@@ -1,13 +1,13 @@
-package com.wust.ssd.fitnessclubfinder.ui.slideshow
+package com.wust.ssd.fitnessclubfinder.ui.favourites
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 
-class SlideshowViewModel : ViewModel() {
+class FavouritesViewModel : ViewModel() {
 
     private val _text = MutableLiveData<String>().apply {
-        value = "This is slideshow Fragment"
+        value = "This is favourites Fragment"
     }
     val text: LiveData<String> = _text
 }

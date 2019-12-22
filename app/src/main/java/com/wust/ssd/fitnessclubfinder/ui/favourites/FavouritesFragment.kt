@@ -1,4 +1,4 @@
-package com.wust.ssd.fitnessclubfinder.ui.share
+package com.wust.ssd.fitnessclubfinder.ui.favourites
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -10,22 +10,27 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import com.wust.ssd.fitnessclubfinder.R
 
-class ShareFragment : Fragment() {
+class FavouritesFragment : Fragment() {
 
-    private lateinit var shareViewModel: ShareViewModel
+    private lateinit var favouritesViewModel: FavouritesViewModel
+
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        shareViewModel =
-            ViewModelProviders.of(this).get(ShareViewModel::class.java)
-        val root = inflater.inflate(R.layout.fragment_share, container, false)
-        val textView: TextView = root.findViewById(R.id.text_share)
-        shareViewModel.text.observe(this, Observer {
+        favouritesViewModel =
+            ViewModelProviders.of(this).get(FavouritesViewModel::class.java)
+        val root = inflater.inflate(R.layout.fragment_favourites, container, false)
+        val textView: TextView = root.findViewById(R.id.text_favourites)
+        favouritesViewModel.text.observe(this, Observer {
             textView.text = it
         })
+
         return root
     }
+
+
+
 }

@@ -22,7 +22,7 @@ import com.wust.ssd.fitnessclubfinder.R
 import com.wust.ssd.fitnessclubfinder.ui.login.LoginActivity
 import javax.inject.Inject
 
-class MainActivity : AppCompatActivity(), Injectable {
+class MainActivity : AppCompatActivity(), Injectable  {
 
     @Inject
     lateinit var mGoogleSignInClient: GoogleSignInClient
@@ -48,12 +48,10 @@ class MainActivity : AppCompatActivity(), Injectable {
         // menu should be considered as top level destinations.
         appBarConfiguration = AppBarConfiguration(
             setOf(
-                R.id.nav_home,
-                R.id.nav_gallery,
-                R.id.nav_slideshow,
-                R.id.nav_tools,
-                R.id.nav_share,
-                R.id.nav_send
+                R.id.nav_camera,
+                R.id.nav_search_club,
+                R.id.nav_favourites,
+                R.id.nav_my_account
             ), drawerLayout
         )
 

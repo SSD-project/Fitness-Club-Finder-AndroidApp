@@ -1,4 +1,4 @@
-package com.wust.ssd.fitnessclubfinder.ui.gallery
+package com.wust.ssd.fitnessclubfinder.ui.camera
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -10,20 +10,20 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import com.wust.ssd.fitnessclubfinder.R
 
-class GalleryFragment : Fragment() {
+class CameraFragment : Fragment() {
 
-    private lateinit var galleryViewModel: GalleryViewModel
+    private lateinit var cameraViewModel: CameraViewModel
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        galleryViewModel =
-            ViewModelProviders.of(this).get(GalleryViewModel::class.java)
-        val root = inflater.inflate(R.layout.fragment_gallery, container, false)
-        val textView: TextView = root.findViewById(R.id.text_gallery)
-        galleryViewModel.text.observe(this, Observer {
+        cameraViewModel =
+            ViewModelProviders.of(this).get(CameraViewModel::class.java)
+        val root = inflater.inflate(R.layout.fragment_camera, container, false)
+        val textView: TextView = root.findViewById(R.id.text_camera)
+        cameraViewModel.text.observe(this, Observer {
             textView.text = it
         })
         return root
