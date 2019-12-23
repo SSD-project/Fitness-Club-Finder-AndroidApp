@@ -1,4 +1,10 @@
 package com.wust.ssd.fitnessclubfinder.ui.camera
 
-interface CameraFragmentComponent {
+import dagger.Subcomponent
+import dagger.android.AndroidInjector
+
+@Subcomponent
+interface CameraFragmentComponent: AndroidInjector<CameraFragment> {
+    @Subcomponent.Factory
+    interface Factory: AndroidInjector.Factory<CameraFragment>
 }
