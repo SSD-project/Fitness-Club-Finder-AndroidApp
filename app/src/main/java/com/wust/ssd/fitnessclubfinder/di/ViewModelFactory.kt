@@ -22,7 +22,7 @@ constructor(viewModelComponent: ViewModelComponent)
     private val creators: ArrayMap<Class<*>, Callable<out ViewModel>> = ArrayMap()
 
     init {
-        
+        creators[CameraViewModel::class.java] = Callable { viewModelComponent.cameraViewModel() }
     }
 
     override fun <T : ViewModel?> create(modelClass: Class<T>): T {
