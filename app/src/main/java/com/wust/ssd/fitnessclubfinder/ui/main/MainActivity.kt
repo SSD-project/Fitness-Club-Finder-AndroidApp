@@ -19,10 +19,11 @@ import android.widget.Toast
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.wust.ssd.fitnessclubfinder.di.Injectable
 import com.wust.ssd.fitnessclubfinder.R
+import com.wust.ssd.fitnessclubfinder.common.CameraPermissionHelper
 import com.wust.ssd.fitnessclubfinder.ui.login.LoginActivity
 import javax.inject.Inject
 
-class MainActivity : AppCompatActivity(), Injectable  {
+class MainActivity : AppCompatActivity(), Injectable {
 
     @Inject
     lateinit var mGoogleSignInClient: GoogleSignInClient
@@ -84,4 +85,32 @@ class MainActivity : AppCompatActivity(), Injectable  {
             finish()
             startActivity(Intent(this, LoginActivity::class.java))
         }
+
+    override fun onResume() {
+        super.onResume()
+        //TODO: refactor CameraPermissionHelper, use DI...
+        if (!CameraPermissionHelper().hasCameraPermission(this)) {
+            CameraPermissionHelper().requestCameraPermission(this)
+            return
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        Toast.makeText(
+            this,
+            "Camera permission is needed to run this application",
+            Toast.LENGTH_LONG
+        )
+            .show()
+        if(!CameraPermissionHelper().shouldShowRequestPermissionRationale(this)){
+            CameraPermissionHelper().launchPermissionSettings(this)
+        }
+        finish()
+
+    }
 }
