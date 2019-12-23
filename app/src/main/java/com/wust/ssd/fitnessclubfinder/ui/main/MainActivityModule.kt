@@ -1,5 +1,7 @@
 package com.wust.ssd.fitnessclubfinder.ui.main
 
+import android.app.Application
+import com.wust.ssd.fitnessclubfinder.App
 import dagger.Binds
 import dagger.Module
 import dagger.android.AndroidInjector
@@ -12,4 +14,7 @@ abstract class MainActivityModule {
     @IntoMap
     @ClassKey(MainActivity::class)
     internal abstract fun bindMainActivityFactory(factory: MainActivityComponent.Factory): AndroidInjector.Factory<*>
+
+    @Binds
+    abstract fun bindApplication(app: App?): Application?
 }
