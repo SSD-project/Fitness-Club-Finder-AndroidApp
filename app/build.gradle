@@ -28,6 +28,7 @@ android {
 
 project.ext {
     daggerVersion = "2.25.2"
+    sceneformVersion = "1.14.0"
 
 }
 
@@ -54,5 +55,9 @@ dependencies {
     kapt "com.google.dagger:dagger-compiler:$project.daggerVersion"
 
     implementation 'com.google.android.gms:play-services-auth:17.0.0'
+
+    // Provides ArFragment, and other UX resources.
+    implementation "com.google.ar.sceneform.ux:sceneform-ux:$project.sceneformVersion"
+    implementation "com.google.ar:core:$project.sceneformVersion"
 
 }
