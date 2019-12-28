@@ -2,34 +2,42 @@ package com.wust.ssd.fitnessclubfinder.ui.main
 
 import android.content.Intent
 import android.os.Bundle
-import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.google.android.material.snackbar.Snackbar
+import android.util.Log
+import android.view.Menu
+import android.widget.Button
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
-import androidx.drawerlayout.widget.DrawerLayout
-import com.google.android.material.navigation.NavigationView
-import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
-import android.view.Menu
-import android.widget.Button
-import android.widget.Toast
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
-import com.wust.ssd.fitnessclubfinder.di.Injectable
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.navigation.NavigationView
+import com.google.android.material.snackbar.Snackbar
+import com.google.ar.core.ArCoreApk
+import com.google.ar.core.exceptions.*
 import com.wust.ssd.fitnessclubfinder.R
 import com.wust.ssd.fitnessclubfinder.common.CameraPermissionHelper
+import com.wust.ssd.fitnessclubfinder.di.Injectable
 import com.wust.ssd.fitnessclubfinder.ui.login.LoginActivity
+import java.lang.Exception
 import javax.inject.Inject
 
 class MainActivity : AppCompatActivity(), Injectable {
+    private val TAG = this.javaClass.simpleName
+
 
     @Inject
     lateinit var mGoogleSignInClient: GoogleSignInClient
 
 
     private lateinit var appBarConfiguration: AppBarConfiguration
+
+    private var installRequested = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -88,6 +96,28 @@ class MainActivity : AppCompatActivity(), Injectable {
 
     override fun onResume() {
         super.onResume()
+        try {
+            if (ArCoreApk.getInstance().requestInstall(
+                    this,
+                    !installRequested
+                ) === ArCoreApk.InstallStatus.INSTALL_REQUESTED
+            ) {
+                installRequested = true
+                return
+            }
+        } catch (e: Exception) {
+            val message = when(e){
+                is UnavailableArcoreNotInstalledException -> "Please install ARCore"
+                is UnavailableUserDeclinedInstallationException -> "Please install ARCore"
+                is UnavailableApkTooOldException -> "Please update ARCore"
+                is UnavailableSdkTooOldException -> "Please update this app"
+                is UnavailableDeviceNotCompatibleException -> "This device does not support AR"
+                else -> "Failed to create AR session"
+            }
+            Toast.makeText(this,message, Toast.LENGTH_LONG).show()
+            Log.e(TAG, message)
+
+        }
         //TODO: refactor CameraPermissionHelper, use DI...
         if (!CameraPermissionHelper().hasCameraPermission(this)) {
             CameraPermissionHelper().requestCameraPermission(this)
@@ -107,10 +137,11 @@ class MainActivity : AppCompatActivity(), Injectable {
             Toast.LENGTH_LONG
         )
             .show()
-        if(!CameraPermissionHelper().shouldShowRequestPermissionRationale(this)){
+        if (!CameraPermissionHelper().shouldShowRequestPermissionRationale(this)) {
             CameraPermissionHelper().launchPermissionSettings(this)
         }
         finish()
 
     }
+
 }
