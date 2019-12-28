@@ -7,6 +7,8 @@ import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.wust.ssd.fitnessclubfinder.App
+import com.wust.ssd.fitnessclubfinder.common.BackgroundRenderer
+import com.wust.ssd.fitnessclubfinder.common.DisplayRotationHelper
 import com.wust.ssd.fitnessclubfinder.ui.camera.CameraFragmentComponent
 import com.wust.ssd.fitnessclubfinder.ui.login.LoginActivityComponent
 import com.wust.ssd.fitnessclubfinder.ui.main.MainActivityComponent
@@ -47,4 +49,10 @@ class AppModule {
             .build()
         return GoogleSignIn.getClient(app.applicationContext, gso)
     }
+
+    @Provides
+    fun provideBackgroundRenderer(app:App) = BackgroundRenderer(app.applicationContext)
+
+    @Provides
+    fun provideDisplayRotationHelper(app:App) = DisplayRotationHelper(app.applicationContext)
 }
