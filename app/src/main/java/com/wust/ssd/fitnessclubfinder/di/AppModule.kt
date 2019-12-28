@@ -9,6 +9,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.wust.ssd.fitnessclubfinder.App
 import com.wust.ssd.fitnessclubfinder.common.BackgroundRenderer
 import com.wust.ssd.fitnessclubfinder.common.DisplayRotationHelper
+import com.wust.ssd.fitnessclubfinder.common.MainRenderer
 import com.wust.ssd.fitnessclubfinder.ui.camera.CameraFragmentComponent
 import com.wust.ssd.fitnessclubfinder.ui.login.LoginActivityComponent
 import com.wust.ssd.fitnessclubfinder.ui.main.MainActivityComponent
@@ -51,8 +52,15 @@ class AppModule {
     }
 
     @Provides
-    fun provideBackgroundRenderer(app:App) = BackgroundRenderer(app.applicationContext)
+    fun provideBackgroundRenderer(app: App) = BackgroundRenderer(app.applicationContext)
 
     @Provides
-    fun provideDisplayRotationHelper(app:App) = DisplayRotationHelper(app.applicationContext)
+    fun provideDisplayRotationHelper(app: App) = DisplayRotationHelper(app.applicationContext)
+
+    @Provides
+    fun provideMainRenderer(
+        app: App,
+        backgroundRenderer: BackgroundRenderer,
+        displayRotationHelper: DisplayRotationHelper
+    ) = MainRenderer(app.applicationContext, displayRotationHelper, backgroundRenderer)
 }
