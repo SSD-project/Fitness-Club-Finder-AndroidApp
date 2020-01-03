@@ -1,4 +1,4 @@
-package com.wust.ssd.fitnessclubfinder.common;
+package com.wust.ssd.fitnessclubfinder.utils;
 
 
 import android.content.Context;

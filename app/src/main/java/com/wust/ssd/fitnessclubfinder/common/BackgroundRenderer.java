@@ -26,6 +26,7 @@ import com.google.ar.core.Coordinates2d;
 import com.google.ar.core.Frame;
 import com.google.ar.core.Session;
 import com.wust.ssd.fitnessclubfinder.R;
+import com.wust.ssd.fitnessclubfinder.utils.ShaderUtil;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
