@@ -33,7 +33,10 @@ android {
 project.ext {
     daggerVersion = "2.25.2"
     sceneformVersion = "1.14.0"
-
+    retrofitVersion = "2.7.0"
+    okHttpVersion = "3.9.1"
+    rxKotlinVersion = "2.2.0"
+    rxAndroidVersion = "2.0.1"
 }
 
 dependencies {
@@ -64,4 +67,14 @@ dependencies {
     implementation "com.google.ar.sceneform.ux:sceneform-ux:$project.sceneformVersion"
     implementation "com.google.ar:core:$project.sceneformVersion"
 
+    //retrofit
+    implementation "com.squareup.retrofit2:retrofit:$project.retrofitVersion"
+    implementation "com.squareup.retrofit2:converter-gson:$project.retrofitVersion"
+    implementation "com.squareup.retrofit2:adapter-rxjava2:$project.retrofitVersion"
+
+    implementation "com.squareup.okhttp3:logging-interceptor:$project.okHttpVersion"
+
+    //RxKotlin
+    implementation "io.reactivex.rxjava2:rxkotlin:$project.rxKotlinVersion"
+    implementation "io.reactivex.rxjava2:rxandroid:$project.rxAndroidVersion"
 }
