@@ -1,7 +1,16 @@
 package com.wust.ssd.fitnessclubfinder.ui.camera
 
+import android.annotation.SuppressLint
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
 import android.location.Location
+import android.text.TextPaint
+import android.util.DisplayMetrics
 import android.util.Log
+import android.util.Size
+import android.widget.Toast
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -63,5 +72,37 @@ class CameraViewModel @Inject constructor(val nearbySearchRepository: NearbySear
 
     }
 
+    fun createBitmapWithClubs(displayMetrics: DisplayMetrics, previewSize:Size): Bitmap =
+        createCircle(previewSize, 2000F, 2000F, displayMetrics)
 
+    private fun createCircle(
+        size: Size,
+        x: Float,
+        y: Float,
+        displayMetrics: DisplayMetrics
+    ): Bitmap {
+        val overlay = Bitmap.createBitmap(
+            size.width,
+            size.height,
+            Bitmap.Config.ARGB_8888
+        )
+        val canvas = Canvas(overlay)
+
+
+        val paint = Paint().apply {
+            color = Color.GREEN
+
+        }
+        val textPaint = TextPaint().apply {
+            textSize = (45 * displayMetrics.density)
+            isAntiAlias = true
+            style = Paint.Style.FILL_AND_STROKE
+            color = Color.MAGENTA
+
+        }
+        canvas.drawCircle(x, y, 50F, paint)
+        canvas.drawText("Super Silownia!", x, y, textPaint)
+
+        return overlay
+    }
 }

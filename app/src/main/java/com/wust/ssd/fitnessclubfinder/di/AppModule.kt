@@ -8,9 +8,8 @@ import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.wust.ssd.fitnessclubfinder.App
-import com.wust.ssd.fitnessclubfinder.common.BackgroundRenderer
+import com.wust.ssd.fitnessclubfinder.common.CameraHelper
 import com.wust.ssd.fitnessclubfinder.common.DisplayRotationHelper
-import com.wust.ssd.fitnessclubfinder.common.MainRenderer
 import com.wust.ssd.fitnessclubfinder.common.network.RetrofitFactory
 import com.wust.ssd.fitnessclubfinder.common.repository.NearbySearchRepository
 import com.wust.ssd.fitnessclubfinder.common.repository.RestApiRepository
@@ -56,18 +55,9 @@ class AppModule {
         return GoogleSignIn.getClient(app.applicationContext, gso)
     }
 
-    @Provides
-    fun provideBackgroundRenderer(app: App) = BackgroundRenderer(app.applicationContext)
 
     @Provides
     fun provideDisplayRotationHelper(app: App) = DisplayRotationHelper(app.applicationContext)
-
-    @Provides
-    fun provideMainRenderer(
-        app: App,
-        backgroundRenderer: BackgroundRenderer,
-        displayRotationHelper: DisplayRotationHelper
-    ) = MainRenderer(app.applicationContext, displayRotationHelper, backgroundRenderer)
 
     @Singleton
     @Provides
@@ -85,4 +75,6 @@ class AppModule {
     ): NearbySearchRepository =
         NearbySearchRepository(restApiRepository, app.applicationContext, rxSchedulersFacade)
 
+    @Provides
+    fun provideCameraHelper(app: App) = CameraHelper(app.applicationContext)
 }
