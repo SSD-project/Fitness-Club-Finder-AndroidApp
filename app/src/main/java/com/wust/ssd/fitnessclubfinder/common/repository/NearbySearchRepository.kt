@@ -22,12 +22,12 @@ class NearbySearchRepository(
 ) {
     private val stream: BehaviorSubject<NearbySearchAPIResult> = BehaviorSubject.create()
     private val disposable = CompositeDisposable()
-    lateinit var lastLocation: Location
+    var lastLocation: Location? = null
     lateinit var nearbyClubs: List<Club>
 
     private var apiCallLockFlag = true
     private var apiCallInProgress = false
-    private var positionChangeFlag = true
+    var positionChangeFlag = true
     private var apiFailFlag = false
     private var fitnessClubs: List<Club>? = null
     private var apiTimer: Timer? = null
@@ -92,14 +92,11 @@ class NearbySearchRepository(
 
 
     fun next() {
-        if (!apiCallLockFlag
-//            && positionChangeFlag
-        ) {
-            if (::lastLocation.isInitialized) {
-                callForNearbyClubsUpdate(lastLocation)
-                positionChangeFlag = false
-                apiCallLockFlag = true
-            }
+        if (!apiCallLockFlag && positionChangeFlag && lastLocation !== null) {
+            callForNearbyClubsUpdate(lastLocation!!)
+            positionChangeFlag = false
+            apiCallLockFlag = true
+
         }
         fitnessClubs?.let {
             stream.onNext(NearbySearchAPIResult(emptyList(), it))

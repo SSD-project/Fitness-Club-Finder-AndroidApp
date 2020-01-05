@@ -1,6 +1,5 @@
 package com.wust.ssd.fitnessclubfinder.ui.camera
 
-import android.annotation.SuppressLint
 import android.location.Location
 import android.util.Log
 import androidx.lifecycle.LiveData
@@ -13,6 +12,7 @@ import com.wust.ssd.fitnessclubfinder.common.repository.NearbyClubsObserver
 import com.wust.ssd.fitnessclubfinder.common.repository.NearbySearchRepository
 import io.reactivex.disposables.CompositeDisposable
 import javax.inject.Inject
+import kotlin.math.abs
 
 class CameraViewModel @Inject constructor(val nearbySearchRepository: NearbySearchRepository) :
     ViewModel() {
@@ -33,10 +33,20 @@ class CameraViewModel @Inject constructor(val nearbySearchRepository: NearbySear
 
     private fun nearbyClubsUpdate(data: List<Club>) = nearbyClubs.postValue(data)
 
-    fun onLocationChanged(userLocation: Location) {
-        nearbySearchRepository.lastLocation = userLocation
-        nearbySearchRepository.next()
-    }
+    fun onLocationChanged(userLocation: Location) =
+        nearbySearchRepository.apply {
+            if (lastLocation === null ||
+                abs(userLocation.latitude - lastLocation!!.latitude) >= 0.00002 ||
+                abs(userLocation.longitude - lastLocation!!.longitude) >= 0.00002 ||
+                userLocation.speed >= 0.5
+            ) {
+                lastLocation = userLocation
+                positionChangeFlag = true
+
+            }
+            this.next()
+        }
+
 
     inner class DataObserver : NearbyClubsObserver() {
 
@@ -52,4 +62,6 @@ class CameraViewModel @Inject constructor(val nearbySearchRepository: NearbySear
         }
 
     }
+
+
 }
