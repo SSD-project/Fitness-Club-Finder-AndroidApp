@@ -3,41 +3,30 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mobile_navigation"
-    app:startDestination="@+id/nav_home">
+    app:startDestination="@+id/nav_camera">
 
     <fragment
-        android:id="@+id/nav_home"
-        android:name="com.wust.ssd.fitnessclubfinder.ui.home.HomeFragment"
-        android:label="@string/menu_home"
-        tools:layout="@layout/fragment_home" />
+        android:id="@+id/nav_camera"
+        android:name="com.wust.ssd.fitnessclubfinder.ui.camera.CameraFragment"
+        android:label="@string/menu_camera"
+        tools:layout="@layout/fragment_camera" />
 
     <fragment
-        android:id="@+id/nav_gallery"
-        android:name="com.wust.ssd.fitnessclubfinder.ui.gallery.GalleryFragment"
-        android:label="@string/menu_gallery"
-        tools:layout="@layout/fragment_gallery" />
+        android:id="@+id/nav_search_club"
+        android:name="com.wust.ssd.fitnessclubfinder.ui.searchClub.SearchClubFragment"
+        android:label="@string/menu_search_club"
+        tools:layout="@layout/fragment_search_club" />
 
     <fragment
-        android:id="@+id/nav_slideshow"
-        android:name="com.wust.ssd.fitnessclubfinder.ui.slideshow.SlideshowFragment"
-        android:label="@string/menu_slideshow"
-        tools:layout="@layout/fragment_slideshow" />
+        android:id="@+id/nav_favourites"
+        android:name="com.wust.ssd.fitnessclubfinder.ui.favourites.FavouritesFragment"
+        android:label="@string/menu_favourites"
+        tools:layout="@layout/fragment_favourites" />
 
     <fragment
-        android:id="@+id/nav_tools"
-        android:name="com.wust.ssd.fitnessclubfinder.ui.tools.ToolsFragment"
-        android:label="@string/menu_tools"
-        tools:layout="@layout/fragment_tools" />
+        android:id="@+id/nav_my_account"
+        android:name="com.wust.ssd.fitnessclubfinder.ui.myAccount.MyAccountFragment"
+        android:label="@string/menu_my_account"
+        tools:layout="@layout/fragment_my_account" />
 
-    <fragment
-        android:id="@+id/nav_share"
-        android:name="com.wust.ssd.fitnessclubfinder.ui.share.ShareFragment"
-        android:label="@string/menu_share"
-        tools:layout="@layout/fragment_share" />
-
-    <fragment
-        android:id="@+id/nav_send"
-        android:name="com.wust.ssd.fitnessclubfinder.ui.send.SendFragment"
-        android:label="@string/menu_send"
-        tools:layout="@layout/fragment_send" />
 </navigation>
