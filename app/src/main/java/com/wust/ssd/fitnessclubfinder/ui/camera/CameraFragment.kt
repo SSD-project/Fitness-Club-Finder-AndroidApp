@@ -13,12 +13,14 @@ import android.view.TextureView
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.RelativeLayout
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.contains
+import androidx.core.view.size
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelProviders
+import androidx.lifecycle.*
 import com.wust.ssd.fitnessclubfinder.R
+import com.wust.ssd.fitnessclubfinder.common.ARMarker
 import com.wust.ssd.fitnessclubfinder.common.CameraHelper
 import com.wust.ssd.fitnessclubfinder.di.Injectable
 import javax.inject.Inject
@@ -37,9 +39,9 @@ class CameraFragment : Fragment(), Injectable, LocationListener {
 
     private var textureView: TextureView? = null
     private val stateCallback = CameraStateCallback()
-    private val surfaceTextureListener: TextureView.SurfaceTextureListener =
-        SurfaceTextureListener()
-    private lateinit var imageView: ImageView
+    private val surfaceTextureListener = SurfaceTextureListener()
+    private lateinit var clubsContainer: RelativeLayout
+
 
     @SuppressLint("MissingPermission")
     override fun onActivityCreated(savedInstanceState: Bundle?) {
@@ -55,10 +57,20 @@ class CameraFragment : Fragment(), Injectable, LocationListener {
         viewModel?.location?.observe(this, Observer {
             Log.e("CameraLocation", it.latitude.toString())
         })
-        viewModel?.nearbyClubs?.observe(this, Observer {
-            Log.e(TAG, it.toString())
-        })
+
         viewModel?.nearbySearchRepository?.startNearbyClubsApiCalls()
+
+        viewModel?.markers?.observe(this, Observer { markers ->
+            clubsContainer.removeAllViews()
+
+            markers.forEachIndexed { index, it ->
+                it.verticalPosition = 100F * index
+                it.refresh()
+                clubsContainer.addView(it.view)
+
+            }
+
+        })
 
         val locationManager =
             activity?.getSystemService(AppCompatActivity.LOCATION_SERVICE) as LocationManager
@@ -80,10 +92,11 @@ class CameraFragment : Fragment(), Injectable, LocationListener {
 //        viewModel?.text?.observe(this, Observer {
 //            textView.text = it
 //        })
-        imageView = root.findViewById(R.id.imageView)
-
+//        imageView = root.findViewById(R.id.imageView)
+        clubsContainer = root.findViewById(R.id.clubs_container)
 
         textureView = root.findViewById(R.id.texture_view)
+
 
         return root
     }
@@ -134,14 +147,15 @@ class CameraFragment : Fragment(), Injectable, LocationListener {
         override fun onOpened(p0: CameraDevice) {
             camera.createPreviewSession(p0, textureView?.surfaceTexture!!)
             activity?.runOnUiThread {
-                imageView.clipBounds
-
-                imageView.setImageBitmap(
-                    viewModel?.createBitmapWithClubs(
-                        resources.displayMetrics,
-                        camera.previewSize!!
-                    )
-                )
+                //                clubs.forEach {
+//                    it.refresh()
+//                }
+//                imageView.setImageBitmap(
+//                    viewModel?.createBitmapWithClubs(
+//                        resources.displayMetrics,
+//                        camera.previewSize!!
+//                    )
+//                )
             }
         }
 

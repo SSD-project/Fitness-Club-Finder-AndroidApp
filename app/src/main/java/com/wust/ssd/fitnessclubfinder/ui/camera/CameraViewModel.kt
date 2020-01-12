@@ -1,6 +1,6 @@
 package com.wust.ssd.fitnessclubfinder.ui.camera
 
-import android.annotation.SuppressLint
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -10,10 +10,10 @@ import android.text.TextPaint
 import android.util.DisplayMetrics
 import android.util.Log
 import android.util.Size
-import android.widget.Toast
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.wust.ssd.fitnessclubfinder.common.ARMarker
 import com.wust.ssd.fitnessclubfinder.common.model.Club
 import com.wust.ssd.fitnessclubfinder.common.model.NearbySearchAPIResult
 import com.wust.ssd.fitnessclubfinder.common.model.UserLocation
@@ -23,7 +23,10 @@ import io.reactivex.disposables.CompositeDisposable
 import javax.inject.Inject
 import kotlin.math.abs
 
-class CameraViewModel @Inject constructor(val nearbySearchRepository: NearbySearchRepository) :
+class CameraViewModel @Inject constructor(
+    private val context: Context,
+    val nearbySearchRepository: NearbySearchRepository
+) :
     ViewModel() {
 
     private val _text = MutableLiveData<String>().apply {
@@ -32,7 +35,10 @@ class CameraViewModel @Inject constructor(val nearbySearchRepository: NearbySear
     private var disposable = CompositeDisposable()
     val location = MutableLiveData<UserLocation>()
     val nearbyClubs = MutableLiveData<List<Club>>()
+    val markers = MutableLiveData<List<ARMarker>>()
     val text: LiveData<String> = _text
+
+    val clubs = mutableListOf<ARMarker>()
 
     fun requestUserLocationUpdates() {
         disposable.add(nearbySearchRepository.subscribe(DataObserver()))
@@ -41,6 +47,8 @@ class CameraViewModel @Inject constructor(val nearbySearchRepository: NearbySear
     private fun userLocationUpdate(data: UserLocation) = location.postValue(data)
 
     private fun nearbyClubsUpdate(data: List<Club>) = nearbyClubs.postValue(data)
+
+    private fun markersUpdate(data: List<ARMarker>) = markers.postValue(data)
 
     fun onLocationChanged(userLocation: Location) =
         nearbySearchRepository.apply {
@@ -66,43 +74,32 @@ class CameraViewModel @Inject constructor(val nearbySearchRepository: NearbySear
 
         override fun onComplete() {}
         override fun onNext(t: NearbySearchAPIResult) {
-            if (t.results.isNotEmpty())
+            if (t.results.isNotEmpty()) {
                 nearbyClubsUpdate(t.results)
+
+                val arMarkers = t.results.map { club ->
+                    ARMarker(context, club)
+                }
+
+                if (markers.value === null || isEqualsToMarkers(t))
+                    markersUpdate(arMarkers)
+            }
         }
+
+        private fun isEqualsToMarkers(t: NearbySearchAPIResult) =
+            t.results.map { it.id } === markers.value!!.map { it.club.id }
 
     }
 
-    fun createBitmapWithClubs(displayMetrics: DisplayMetrics, previewSize:Size): Bitmap =
-        createCircle(previewSize, 2000F, 2000F, displayMetrics)
 
-    private fun createCircle(
-        size: Size,
-        x: Float,
-        y: Float,
-        displayMetrics: DisplayMetrics
-    ): Bitmap {
-        val overlay = Bitmap.createBitmap(
-            size.width,
-            size.height,
-            Bitmap.Config.ARGB_8888
-        )
-        val canvas = Canvas(overlay)
+    private fun getVerticalPosition(alpha: Double, bearing: Float): Float {
 
-
-        val paint = Paint().apply {
-            color = Color.GREEN
-
+        val x = when {
+            bearing - alpha > 180 -> alpha + 360
+            alpha - bearing > 180 -> alpha - 360
+            else -> alpha
         }
-        val textPaint = TextPaint().apply {
-            textSize = (45 * displayMetrics.density)
-            isAntiAlias = true
-            style = Paint.Style.FILL_AND_STROKE
-            color = Color.MAGENTA
-
-        }
-        canvas.drawCircle(x, y, 50F, paint)
-        canvas.drawText("Super Silownia!", x, y, textPaint)
-
-        return overlay
+        return ((x - bearing) /  /*verticalAngle*/ +.5f).toFloat()
     }
+
 }
