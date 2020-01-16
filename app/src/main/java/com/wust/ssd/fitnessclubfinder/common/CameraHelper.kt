@@ -12,7 +12,9 @@ import android.util.Size
 import android.view.Surface
 import androidx.core.app.ActivityCompat
 import java.util.*
+import kotlin.math.PI
 import kotlin.math.atan
+
 
 class CameraHelper(private val context: Context) {
 
@@ -69,18 +71,18 @@ class CameraHelper(private val context: Context) {
         val sensorPhysicalSize = cameraCharacteristics?.get(SENSOR_INFO_PHYSICAL_SIZE)?.width
 
         if (lensFocalLength !== null && sensorPhysicalSize !== null) {
-            return 2F * atan(sensorPhysicalSize / (2F * lensFocalLength))
+            return (180 / PI).toFloat() * (2F * atan(sensorPhysicalSize / (2F * lensFocalLength)))
         }
-        return 0F
+        return null
     }
 
     fun getVerticalViewAngle(): Float? {
         val lensFocalLength = cameraCharacteristics?.get(LENS_INFO_AVAILABLE_FOCAL_LENGTHS)?.get(0)
         val sensorPhysicalSize = cameraCharacteristics?.get(SENSOR_INFO_PHYSICAL_SIZE)?.height
         if (lensFocalLength !== null && sensorPhysicalSize !== null) {
-            return 2F * atan(sensorPhysicalSize / (2F * lensFocalLength))
+            return (180 / PI).toFloat() * 2F * atan(sensorPhysicalSize / (2F * lensFocalLength))
         }
-        return 0F
+        return null
     }
 
     fun openBackgroundThread() {

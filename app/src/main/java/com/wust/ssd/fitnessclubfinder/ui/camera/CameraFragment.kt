@@ -7,22 +7,22 @@ import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Bundle
+import android.util.DisplayMetrics
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.TextureView
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import android.widget.RelativeLayout
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.contains
-import androidx.core.view.size
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.*
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelProviders
 import com.wust.ssd.fitnessclubfinder.R
-import com.wust.ssd.fitnessclubfinder.common.ARMarker
 import com.wust.ssd.fitnessclubfinder.common.CameraHelper
 import com.wust.ssd.fitnessclubfinder.di.Injectable
+import com.wust.ssd.fitnessclubfinder.utils.DrawableUtil
 import javax.inject.Inject
 
 class CameraFragment : Fragment(), Injectable, LocationListener {
@@ -34,6 +34,9 @@ class CameraFragment : Fragment(), Injectable, LocationListener {
 
     @Inject
     lateinit var viewModelFactory: ViewModelProvider.Factory
+
+    @Inject
+    lateinit var drawableUtil: DrawableUtil
 
     private var viewModel: CameraViewModel? = null
 
@@ -52,25 +55,27 @@ class CameraFragment : Fragment(), Injectable, LocationListener {
                 .of(this, viewModelFactory)
                 .get(CameraViewModel::class.java)
 
-        viewModel!!.requestUserLocationUpdates()
+        viewModel?.apply {
+            requestUserLocationUpdates()
 
-        viewModel?.location?.observe(this, Observer {
-            Log.e("CameraLocation", it.latitude.toString())
-        })
+            nearbySearchRepository.startNearbyClubsApiCalls()
 
-        viewModel?.nearbySearchRepository?.startNearbyClubsApiCalls()
+            markers.observe(this@CameraFragment, Observer { markers ->
+                clubsContainer.removeAllViews()
+                markers.forEach {
+                    it.view.background = drawableUtil.importResource(
+                        "marker_background",
+                        R.drawable::class.java,
+                        64,
+                        64
+                    )
+                    it.refresh()
+                    clubsContainer.addView(it.view)
+                }
 
-        viewModel?.markers?.observe(this, Observer { markers ->
-            clubsContainer.removeAllViews()
+            })
+        }
 
-            markers.forEachIndexed { index, it ->
-                it.verticalPosition = 100F * index
-                it.refresh()
-                clubsContainer.addView(it.view)
-
-            }
-
-        })
 
         val locationManager =
             activity?.getSystemService(AppCompatActivity.LOCATION_SERVICE) as LocationManager
@@ -86,13 +91,7 @@ class CameraFragment : Fragment(), Injectable, LocationListener {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-
         val root = inflater.inflate(R.layout.fragment_camera, container, false)
-//        val textView: TextView = root.findViewById(R.id.text_camera)
-//        viewModel?.text?.observe(this, Observer {
-//            textView.text = it
-//        })
-//        imageView = root.findViewById(R.id.imageView)
         clubsContainer = root.findViewById(R.id.clubs_container)
 
         textureView = root.findViewById(R.id.texture_view)
@@ -105,6 +104,12 @@ class CameraFragment : Fragment(), Injectable, LocationListener {
     override fun onResume() {
         super.onResume()
         camera.openBackgroundThread()
+        viewModel?.compass?.onResume()
+        viewModel?.markers?.observe(this, Observer { markers ->
+            Log.e("CameraFragment", "onResumeWorker")
+
+            viewModel!!.runWorker(markers, activity!!)
+        })
         when {
             textureView?.isAvailable!! -> camera.onResume(stateCallback)
             else -> textureView!!.surfaceTextureListener = surfaceTextureListener
@@ -112,16 +117,15 @@ class CameraFragment : Fragment(), Injectable, LocationListener {
     }
 
     override fun onLocationChanged(userLocation: Location?) {
-//        Toast.makeText(context, "$TAG onLocationChanged", Toast.LENGTH_SHORT).show()
-        userLocation?.let {
-            viewModel?.onLocationChanged(it)
-        }
+        if (userLocation !== null && viewModel !== null)
+            viewModel?.onLocationChanged(userLocation)
 
     }
 
     override fun onStop() {
         super.onStop()
         camera.onStop()
+        viewModel?.compass?.onPause()
     }
 
 
@@ -140,23 +144,21 @@ class CameraFragment : Fragment(), Injectable, LocationListener {
         override fun onSurfaceTextureAvailable(p0: SurfaceTexture?, p1: Int, p2: Int) {
             camera.setupCamera()
             camera.openCamera(stateCallback)
+            viewModel?.let {
+                it.verticalViewAngle = camera.getVerticalViewAngle()
+                it.horizontalViewAngle = camera.getHorizontalViewAngle()
+
+                val displayMetrics = DisplayMetrics()
+                activity?.windowManager?.defaultDisplay?.getMetrics(displayMetrics)
+                it.screenWidth = displayMetrics.widthPixels
+                it.screenHeight = displayMetrics.heightPixels
+            }
         }
     }
 
     inner class CameraStateCallback : CameraDevice.StateCallback() {
         override fun onOpened(p0: CameraDevice) {
             camera.createPreviewSession(p0, textureView?.surfaceTexture!!)
-            activity?.runOnUiThread {
-                //                clubs.forEach {
-//                    it.refresh()
-//                }
-//                imageView.setImageBitmap(
-//                    viewModel?.createBitmapWithClubs(
-//                        resources.displayMetrics,
-//                        camera.previewSize!!
-//                    )
-//                )
-            }
         }
 
         override fun onDisconnected(p0: CameraDevice) {
@@ -168,4 +170,6 @@ class CameraFragment : Fragment(), Injectable, LocationListener {
         }
 
     }
+
+
 }
