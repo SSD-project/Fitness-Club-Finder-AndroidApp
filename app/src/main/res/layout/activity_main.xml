@@ -37,19 +37,6 @@
                 android:drawableLeft="@drawable/ic_menu_gallery"
                 android:text="@string/logout">
             </Button>
-<!--                <ImageView-->
-<!--                    android:layout_width="wrap_content"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:padding="20px"-->
-<!--                     />-->
-
-<!--                <TextView-->
-<!--                    android:layout_width="match_parent"-->
-<!--                    android:layout_height="match_parent"-->
-<!--                    android:gravity="center_vertical"-->
-<!--                    android:paddingLeft="50px"-->
-<!--                    -->
-<!--                />-->
 
         </LinearLayout>
     </com.google.android.material.navigation.NavigationView>
