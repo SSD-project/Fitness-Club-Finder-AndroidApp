@@ -8,14 +8,17 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.location.Location
 import android.util.Log
+import android.widget.RelativeLayout
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.wust.ssd.fitnessclubfinder.R
 import com.wust.ssd.fitnessclubfinder.common.ARMarker
 import com.wust.ssd.fitnessclubfinder.common.model.Club
 import com.wust.ssd.fitnessclubfinder.common.model.NearbySearchAPIResult
 import com.wust.ssd.fitnessclubfinder.common.repository.NearbyClubsObserver
 import com.wust.ssd.fitnessclubfinder.common.repository.NearbySearchRepository
+import com.wust.ssd.fitnessclubfinder.utils.DrawableUtil
 import io.reactivex.disposables.CompositeDisposable
 import javax.inject.Inject
 import kotlin.concurrent.thread
@@ -23,7 +26,8 @@ import kotlin.math.abs
 
 class CameraViewModel @Inject constructor(
     private val context: Context,
-    val nearbySearchRepository: NearbySearchRepository
+    val nearbySearchRepository: NearbySearchRepository,
+    private val drawableUtil: DrawableUtil
 ) :
     ViewModel() {
 
@@ -38,15 +42,14 @@ class CameraViewModel @Inject constructor(
 
     var screenWidth: Int? = null
     var screenHeight: Int? = null
+    lateinit var clubsContainer: RelativeLayout
 
     var horizontalViewAngle: Float? = null
     var verticalViewAngle: Float? = null
     val compass = CompassSensor(context)
 
 
-
     val clubs = mutableListOf<ARMarker>()
-
 
 
     fun requestUserLocationUpdates() {
@@ -59,16 +62,6 @@ class CameraViewModel @Inject constructor(
     private fun nearbyClubsUpdate(data: List<Club>) = nearbyClubs.postValue(data)
 
     private fun markersUpdate(data: List<ARMarker>) = markers.postValue(data)
-
-    private fun getVerticalParallax(altitude: Float) =
-//altitude (probably pitch) should be in degrees
-        screenHeight!! - (1 * (altitude + 90) / verticalViewAngle!! + 0.5f).let {
-            when {
-                it < -1 -> -1f
-                it > 1 -> 1f
-                else -> it
-            }
-        } * screenHeight!!
 
     private fun countBearingsAndDistances(markers: List<ARMarker>, location: Location) {
         markers.forEach {
@@ -87,22 +80,29 @@ class CameraViewModel @Inject constructor(
             alpha - bearing > 180 -> alpha - 360
             else -> alpha
         }
-
-
-
-        return ((x - bearing) / horizontalViewAngle!! + .5f) * screenWidth!!
+        return ((x - bearing) / horizontalViewAngle!! + .5f)
     }
 
-    private fun getVerticalPosizion(distance: Float, max: Double, min: Double): Float {
-        return ((distance - min) / (max - min)).toFloat() * screenHeight?.toFloat()!!
-    }
+
+    private fun getVerticalParallax(pitch: Float): Float =
+        (2 * (90 + pitch % 360) / verticalViewAngle!!).let {
+            when {
+                it < -1 -> -1f
+                it > 1 -> 1f
+                else -> it
+            }
+        }
+
+    private fun getVerticalPosition(
+        distance: Float,
+        maxDist: Double,
+        minDist: Double
+    ) = ((distance - minDist) / (maxDist - minDist)).toFloat()
 
     fun runWorker(
         markers: List<ARMarker>
         , activity: Activity
     ) {
-
-
 
 
         thread(start = true) {
@@ -116,28 +116,82 @@ class CameraViewModel @Inject constructor(
                     compass.roll !== null
                 ) {
                     countBearingsAndDistances(markers, location.value!!)
+                    val parallax = getVerticalParallax(compass.pitch!!)
+                    val maxY = 1850f//TODO get height from parent container in the air
+                    val minY = 20f
+                    val minVerticalPosition =
+                        if (parallax < 0) minY + parallax * (minY - maxY) else minY
+                    val maxVerticalPosition =
+                        if (parallax > 0) maxY + parallax * (minY - maxY) else maxY
+
+                    val maxDist = getBoundaryDistances(true, markers)
+                    val minDist = getBoundaryDistances(false, markers)
 
                     markers.map {
 
-                        it.horizontalPosition =
-                            getHorizontalPosition(it.bearing!!, compass.azimuth!!)
 
-                        it.verticalPosition = getVerticalParallax(compass.pitch!!)
+                        it.marginLeft =
+                            getHorizontalPosition(
+                                it.bearing!!,
+                                compass.azimuth!!
+                            ).let { marginLeft ->
+                                when {
+                                    marginLeft < 0 -> {
+                                        it.icon = ARMarker.ARROW_LEFT
+                                        0.01F//set to the left margin
+                                    }
+                                    marginLeft > 1 -> {
+                                        it.icon = ARMarker.ARROW_RIGHT
+                                        0.9F//set to the right margin
+                                    }
+                                    else -> {
+                                        it.icon = ARMarker.MARKER_DEFAULT
+                                        marginLeft
+                                    }
+                                }
+                            } * screenWidth!!
+
+
+                        val relativeVerticalPosition =
+                            getVerticalPosition(it.distance!!, maxDist, minDist)
+
+
+                        it.marginTop =
+                            calculateMarginTop(
+                                relativeVerticalPosition,
+                                maxVerticalPosition,
+                                minVerticalPosition
+                            )
+
 
                         val layoutParams = it.refresh()
-
-
+                        updateMakerIcon(it)
                         activity.runOnUiThread {
                             it.view.layoutParams = layoutParams
                             it.view.requestLayout()
                         }
                     }
 
-                }else Thread.sleep(1000)
+                } else Thread.sleep(1000)
                 Thread.sleep(33)
             }
         }
     }
+
+    private fun updateMakerIcon(marker: ARMarker) {
+        if (marker.icon !== marker.currentIcon) {
+            marker.view.background = drawableUtil.importResource(
+                marker.icon,
+                R.drawable::class.java,
+                64,
+                64
+            )
+            marker.currentIcon = marker.icon
+        }
+    }
+
+
+    private fun calculateMarginTop(y: Float, max: Float, min: Float) = max - y * (max - min)
 
     private fun getBoundaryDistances(maximizing: Boolean, markers: List<ARMarker>): Double {
         var result = (-1f).toDouble()
@@ -218,12 +272,9 @@ class CameraViewModel @Inject constructor(
         override fun onSensorChanged(event: SensorEvent?) {
             event?.let { e ->
                 azimuth =
-                    azimuth?.let { exponentialSmoothing360(it, e.values[0]) } ?:
-                            e.values[0]
-                pitch = pitch?.let { exponentialSmoothing180(it, e.values[1]) } ?:
-                        e.values[1]
-                roll = roll?.let { exponentialSmoothing180(it, e.values[2]) } ?:
-                        e.values[2]
+                    azimuth?.let { exponentialSmoothing360(it, e.values[0]) } ?: e.values[0]
+                pitch = pitch?.let { exponentialSmoothing180(it, e.values[1]) } ?: e.values[1]
+                roll = roll?.let { exponentialSmoothing180(it, e.values[2]) } ?: e.values[2]
 
             }
 
@@ -239,16 +290,16 @@ class CameraViewModel @Inject constructor(
             old - measure > 180 -> measure + 360
             measure - old > 180 -> measure - 360
             else -> measure
-        }.apply {
-            (this + .2F * (old - this) + 360) % 360
+        }.let {
+            (it + .2F * (old - it) + 360) % 360
         }
 
         private fun exponentialSmoothing180(old: Float, measure: Float): Float = when {
             old - measure > 180 -> measure + 360
             measure - old > 180 -> measure - 360
             else -> measure
-        }.apply {
-            (this + .2F * (old - this) + 540) % 360 - 180
+        }.let {
+            (it + 0.2F * (old - it) + 540) % 360 - 180
         }
 
     }

@@ -1,24 +1,25 @@
 package com.wust.ssd.fitnessclubfinder.common
 
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
-import android.util.DisplayMetrics
 import android.util.Log
 import android.view.View
 import android.widget.ImageView
 import android.widget.RelativeLayout
-import androidx.core.content.ContextCompat
-import com.wust.ssd.fitnessclubfinder.R.drawable
+import com.wust.ssd.fitnessclubfinder.R
 import com.wust.ssd.fitnessclubfinder.common.model.Club
-import android.location.Location
 
 class ARMarker(val context: Context, val club: Club) {
 
-    var verticalPosition: Float = 0F//from 0F to ~1800F
-    var horizontalPosition: Float = 0F//from 0F to ~1000F
+    companion object{
+        const val MARKER_DEFAULT ="marker_background"
+        const val ARROW_LEFT = "ic_round_arrow_left"
+        const val ARROW_RIGHT = "ic_round_arrow_right"
+    }
+
+    var marginTop: Float = 0F//from 0F to ~1800F
+    var marginLeft: Float = 0F//from 0F to ~1000F
+    var icon = MARKER_DEFAULT
+    var currentIcon = ""
 
     var distance: Float? = null
     var bearing: Float? = null
@@ -37,9 +38,10 @@ class ARMarker(val context: Context, val club: Club) {
         RelativeLayout.LayoutParams.WRAP_CONTENT,
         RelativeLayout.LayoutParams.WRAP_CONTENT
     ).apply {
+
         setMargins(
-            (horizontalPosition - this.width / 2).toInt(),
-            (verticalPosition - this.height / 2).toInt(),
+            (marginLeft - this.width / 2).toInt(),
+            (marginTop - this.height / 2).toInt(),
             -this.width / 2,
             -this.height
         )

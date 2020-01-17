@@ -35,8 +35,7 @@ class CameraFragment : Fragment(), Injectable, LocationListener {
     @Inject
     lateinit var viewModelFactory: ViewModelProvider.Factory
 
-    @Inject
-    lateinit var drawableUtil: DrawableUtil
+
 
     private var viewModel: CameraViewModel? = null
 
@@ -55,20 +54,17 @@ class CameraFragment : Fragment(), Injectable, LocationListener {
                 .of(this, viewModelFactory)
                 .get(CameraViewModel::class.java)
 
+        viewModel?.clubsContainer = clubsContainer
+
         viewModel?.apply {
             requestUserLocationUpdates()
 
             nearbySearchRepository.startNearbyClubsApiCalls()
 
             markers.observe(this@CameraFragment, Observer { markers ->
+
                 clubsContainer.removeAllViews()
                 markers.forEach {
-                    it.view.background = drawableUtil.importResource(
-                        "marker_background",
-                        R.drawable::class.java,
-                        64,
-                        64
-                    )
                     it.refresh()
                     clubsContainer.addView(it.view)
                 }
