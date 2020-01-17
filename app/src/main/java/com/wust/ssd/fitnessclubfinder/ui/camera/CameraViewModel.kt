@@ -2,6 +2,7 @@ package com.wust.ssd.fitnessclubfinder.ui.camera
 
 import android.app.Activity
 import android.content.Context
+import android.graphics.drawable.BitmapDrawable
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -14,6 +15,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.wust.ssd.fitnessclubfinder.R
 import com.wust.ssd.fitnessclubfinder.common.ARMarker
+import com.wust.ssd.fitnessclubfinder.common.MarkerPositionHelper
 import com.wust.ssd.fitnessclubfinder.common.model.Club
 import com.wust.ssd.fitnessclubfinder.common.model.NearbySearchAPIResult
 import com.wust.ssd.fitnessclubfinder.common.repository.NearbyClubsObserver
@@ -73,25 +75,6 @@ class CameraViewModel @Inject constructor(
         }
     }
 
-    private fun getHorizontalPosition(alpha: Float, bearing: Float): Float {
-
-        val x = when {
-            bearing - alpha > 180 -> alpha + 360
-            alpha - bearing > 180 -> alpha - 360
-            else -> alpha
-        }
-        return ((x - bearing) / horizontalViewAngle!! + .5f)
-    }
-
-
-    private fun getVerticalParallax(pitch: Float): Float =
-        (2 * (90 + pitch % 360) / verticalViewAngle!!).let {
-            when {
-                it < -1 -> -1f
-                it > 1 -> 1f
-                else -> it
-            }
-        }
 
     private fun getVerticalPosition(
         distance: Float,
@@ -105,35 +88,31 @@ class CameraViewModel @Inject constructor(
     ) {
 
 
+        val markerPosition = MarkerPositionHelper(horizontalViewAngle!!, verticalViewAngle!!)
         thread(start = true) {
             while (
                 true
             ) {
-
-                if (location.value !== null &&
-                    compass.azimuth !== null &&
-                    compass.pitch !== null &&
-                    compass.roll !== null
-                ) {
+                if (location.value !== null) {
                     countBearingsAndDistances(markers, location.value!!)
-                    val parallax = getVerticalParallax(compass.pitch!!)
+                    val parallax = markerPosition.getVerticalParallax(compass.pitch!!)
                     val maxY = 1850f//TODO get height from parent container in the air
                     val minY = 20f
                     val minVerticalPosition =
-                        if (parallax < 0) minY + parallax * (minY - maxY) else minY
-                    val maxVerticalPosition =
-                        if (parallax > 0) maxY + parallax * (minY - maxY) else maxY
+                        markerPosition.getMinVerticalPosition(parallax, minY, maxY)
 
-                    val maxDist = getBoundaryDistances(true, markers)
-                    val minDist = getBoundaryDistances(false, markers)
+                    val maxVerticalPosition =
+                        markerPosition.getMaxVerticalPosition(parallax, minY, maxY)
+
+
+                    val maxDist = markerPosition.getBoundaryDistances(true, markers)
+                    val minDist = markerPosition.getBoundaryDistances(false, markers)
 
                     markers.map {
-
-
                         it.marginLeft =
-                            getHorizontalPosition(
+                            markerPosition.getHorizontalPosition(
                                 it.bearing!!,
-                                compass.azimuth!!
+                                compass.azimuth
                             ).let { marginLeft ->
                                 when {
                                     marginLeft < 0 -> {
@@ -157,7 +136,7 @@ class CameraViewModel @Inject constructor(
 
 
                         it.marginTop =
-                            calculateMarginTop(
+                            markerPosition.getMarginTop(
                                 relativeVerticalPosition,
                                 maxVerticalPosition,
                                 minVerticalPosition
@@ -165,46 +144,35 @@ class CameraViewModel @Inject constructor(
 
 
                         val layoutParams = it.refresh()
-                        updateMakerIcon(it)
+                        val newIcon = updateMakerIcon(it)
                         activity.runOnUiThread {
+                            newIcon?.let { icon -> it.view.background = icon }
                             it.view.layoutParams = layoutParams
                             it.view.requestLayout()
                         }
                     }
 
-                } else Thread.sleep(1000)
-                Thread.sleep(33)
+
+                    Thread.sleep(33)
+                }
             }
         }
     }
 
-    private fun updateMakerIcon(marker: ARMarker) {
+    private fun updateMakerIcon(marker: ARMarker): BitmapDrawable? {
         if (marker.icon !== marker.currentIcon) {
-            marker.view.background = drawableUtil.importResource(
+
+            marker.currentIcon = marker.icon
+            return drawableUtil.importResource(
                 marker.icon,
                 R.drawable::class.java,
                 64,
                 64
             )
-            marker.currentIcon = marker.icon
         }
+        return null
     }
 
-
-    private fun calculateMarginTop(y: Float, max: Float, min: Float) = max - y * (max - min)
-
-    private fun getBoundaryDistances(maximizing: Boolean, markers: List<ARMarker>): Double {
-        var result = (-1f).toDouble()
-        markers.forEach { marker ->
-            marker.distance?.let {
-                if (result < 0 || maximizing && it > result || !maximizing && it < result)
-                    result = it.toDouble()
-            }
-
-        }
-        return result
-
-    }
 
     fun onLocationChanged(userLocation: Location) {
         userLocationUpdate(userLocation)
@@ -252,9 +220,9 @@ class CameraViewModel @Inject constructor(
 
     inner class CompassSensor(context: Context) : SensorEventListener {
 
-        var azimuth: Float? = null
-        var pitch: Float? = null
-        var roll: Float? = null
+        var azimuth: Float = 0F
+        var pitch: Float = 0F
+        var roll: Float = 0F
 
         private var sensorManager: SensorManager =
             context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
@@ -271,10 +239,9 @@ class CameraViewModel @Inject constructor(
 
         override fun onSensorChanged(event: SensorEvent?) {
             event?.let { e ->
-                azimuth =
-                    azimuth?.let { exponentialSmoothing360(it, e.values[0]) } ?: e.values[0]
-                pitch = pitch?.let { exponentialSmoothing180(it, e.values[1]) } ?: e.values[1]
-                roll = roll?.let { exponentialSmoothing180(it, e.values[2]) } ?: e.values[2]
+                azimuth = exponentialSmoothing360(azimuth, e.values[0])
+                pitch = exponentialSmoothing180(pitch, e.values[1])
+                roll = exponentialSmoothing180(roll, e.values[2])
 
             }
 

@@ -114,7 +114,7 @@ class CameraFragment : Fragment(), Injectable, LocationListener {
 
     override fun onLocationChanged(userLocation: Location?) {
         if (userLocation !== null && viewModel !== null)
-            viewModel?.onLocationChanged(userLocation)
+            viewModel!!.onLocationChanged(userLocation)
 
     }
 
@@ -124,6 +124,10 @@ class CameraFragment : Fragment(), Injectable, LocationListener {
         viewModel?.compass?.onPause()
     }
 
+    override fun onPause() {
+        super.onPause()
+        viewModel?.compass?.onPause()
+    }
 
     override fun onStatusChanged(p0: String?, p1: Int, p2: Bundle?) {}
 
