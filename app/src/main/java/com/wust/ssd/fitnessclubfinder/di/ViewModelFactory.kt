@@ -4,6 +4,7 @@ import android.util.ArrayMap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.wust.ssd.fitnessclubfinder.ui.camera.CameraViewModel
+import com.wust.ssd.fitnessclubfinder.ui.searchClub.SearchClubViewModel
 import java.lang.Exception
 import java.lang.IllegalArgumentException
 import java.lang.RuntimeException
@@ -23,6 +24,7 @@ constructor(viewModelComponent: ViewModelComponent)
 
     init {
         creators[CameraViewModel::class.java] = Callable { viewModelComponent.cameraViewModel() }
+        creators[SearchClubViewModel::class.java] = Callable { viewModelComponent.searchClubViewModel() }
     }
 
     override fun <T : ViewModel?> create(modelClass: Class<T>): T {

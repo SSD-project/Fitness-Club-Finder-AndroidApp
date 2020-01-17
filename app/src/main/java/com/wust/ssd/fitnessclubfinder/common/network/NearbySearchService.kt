@@ -17,7 +17,7 @@ interface NearbySearchService {
 
     companion object {
         const val API_URL = "https://maps.googleapis.com/maps/api/"
-        const val API_KEY = ""
+        const val API_KEY = "AIzaSyCRPqSDU546ntKrSWEb9bXeajLPEvG4-q4"
 
     }
 }

@@ -16,6 +16,7 @@ import com.wust.ssd.fitnessclubfinder.common.repository.RestApiRepository
 import com.wust.ssd.fitnessclubfinder.ui.camera.CameraFragmentComponent
 import com.wust.ssd.fitnessclubfinder.ui.login.LoginActivityComponent
 import com.wust.ssd.fitnessclubfinder.ui.main.MainActivityComponent
+import com.wust.ssd.fitnessclubfinder.ui.searchClub.SearchClubComponent
 import com.wust.ssd.fitnessclubfinder.utils.RxSchedulersFacade
 import dagger.Module
 import dagger.Provides
@@ -25,9 +26,10 @@ import javax.inject.Singleton
 @Module(
     subcomponents = [
         ViewModelComponent::class,
-        LoginActivityComponent::class,
+        SearchClubComponent::class,
         MainActivityComponent::class,
-        CameraFragmentComponent::class
+        CameraFragmentComponent::class,
+        LoginActivityComponent::class
     ]
 )
 class AppModule {
