@@ -10,9 +10,14 @@ import android.hardware.SensorManager
 import android.location.Location
 import android.util.Log
 import android.widget.RelativeLayout
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.google.android.gms.maps.CameraUpdate
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MarkerOptions
 import com.wust.ssd.fitnessclubfinder.R
 import com.wust.ssd.fitnessclubfinder.common.ARMarker
 import com.wust.ssd.fitnessclubfinder.common.MarkerPositionHelper
@@ -33,14 +38,10 @@ class CameraViewModel @Inject constructor(
 ) :
     ViewModel() {
 
-    private val _text = MutableLiveData<String>().apply {
-        value = "This is camera Fragment"
-    }
     private var disposable = CompositeDisposable()
     val location = MutableLiveData<Location>()
     val nearbyClubs = MutableLiveData<List<Club>>()
     val markers = MutableLiveData<List<ARMarker>>()
-    val text: LiveData<String> = _text
 
     var screenWidth: Int? = null
     var screenHeight: Int? = null
@@ -49,6 +50,8 @@ class CameraViewModel @Inject constructor(
     var horizontalViewAngle: Float? = null
     var verticalViewAngle: Float? = null
     val compass = CompassSensor(context)
+
+    private lateinit var map: GoogleMap
 
 
     val clubs = mutableListOf<ARMarker>()
@@ -87,6 +90,7 @@ class CameraViewModel @Inject constructor(
         , activity: Activity
     ) {
 
+        markers.map { map.addMarker(createMapMarker(it)) }
 
         val markerPosition = MarkerPositionHelper(horizontalViewAngle!!, verticalViewAngle!!)
         thread(start = true) {
@@ -95,7 +99,10 @@ class CameraViewModel @Inject constructor(
             ) {
                 if (location.value !== null) {
                     countBearingsAndDistances(markers, location.value!!)
-                    val parallax = markerPosition.getVerticalParallax(compass.pitch!!)
+                    val parallax = markerPosition.getVerticalParallax(compass.pitch)
+                    val tilt = markerPosition.getTilt(parallax)
+                    val refreshedCameraPosition =
+                        refreshedCameraPosition(location.value!!, compass.azimuth, tilt)
                     val maxY = 1850f//TODO get height from parent container in the air
                     val minY = 20f
                     val minVerticalPosition =
@@ -107,7 +114,6 @@ class CameraViewModel @Inject constructor(
 
                     val maxDist = markerPosition.getBoundaryDistances(true, markers)
                     val minDist = markerPosition.getBoundaryDistances(false, markers)
-
                     markers.map {
                         it.marginLeft =
                             markerPosition.getHorizontalPosition(
@@ -146,6 +152,7 @@ class CameraViewModel @Inject constructor(
                         val layoutParams = it.refresh()
                         val newIcon = updateMakerIcon(it)
                         activity.runOnUiThread {
+                            map.moveCamera(refreshedCameraPosition)
                             newIcon?.let { icon -> it.view.background = icon }
                             it.view.layoutParams = layoutParams
                             it.view.requestLayout()
@@ -153,11 +160,23 @@ class CameraViewModel @Inject constructor(
                     }
 
 
-                    Thread.sleep(33)
+                    Thread.sleep(66)
                 }
             }
         }
     }
+
+    private fun createMapMarker(m: ARMarker) =
+        MarkerOptions()
+        .position(
+            LatLng(
+                m.club.geometry.location.lat,
+                m.club.geometry.location.lng
+            )
+        )
+        .visible(true)
+        .title(m.club.name)
+
 
     private fun updateMakerIcon(marker: ARMarker): BitmapDrawable? {
         if (marker.icon !== marker.currentIcon) {
@@ -173,6 +192,28 @@ class CameraViewModel @Inject constructor(
         return null
     }
 
+    fun setupMap(googleMap: GoogleMap) {
+        map = googleMap
+
+    }
+
+    private fun refreshedCameraPosition(
+        userLocation: Location,
+        bearing: Float,
+        tilt: Float
+    ): CameraUpdate {
+        val user = LatLng(userLocation.latitude, userLocation.longitude)
+        val cameraPosition = CameraPosition
+            .Builder()
+            .target(user)
+            .tilt(tilt)
+            .zoom(18.0f)
+            .bearing(bearing)
+            .build()
+        return CameraUpdateFactory.newCameraPosition(cameraPosition)
+
+
+    }
 
     fun onLocationChanged(userLocation: Location) {
         userLocationUpdate(userLocation)
