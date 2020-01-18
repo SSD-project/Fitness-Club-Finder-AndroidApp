@@ -65,7 +65,7 @@ class RestApiRepository
                 lat,
                 long
             ),
-            radius = "1000",
+            radius = "500",
             type = "gym",
             key = NearbySearchService.API_KEY
         )
