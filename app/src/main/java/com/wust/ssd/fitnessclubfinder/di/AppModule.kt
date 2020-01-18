@@ -14,7 +14,6 @@ import com.wust.ssd.fitnessclubfinder.common.network.RetrofitFactory
 import com.wust.ssd.fitnessclubfinder.common.repository.NearbySearchRepository
 import com.wust.ssd.fitnessclubfinder.common.repository.RestApiRepository
 import com.wust.ssd.fitnessclubfinder.ui.camera.CameraFragmentComponent
-import com.wust.ssd.fitnessclubfinder.ui.camera.CameraViewModel
 import com.wust.ssd.fitnessclubfinder.ui.login.LoginActivityComponent
 import com.wust.ssd.fitnessclubfinder.ui.main.MainActivityComponent
 import com.wust.ssd.fitnessclubfinder.utils.DrawableUtil
