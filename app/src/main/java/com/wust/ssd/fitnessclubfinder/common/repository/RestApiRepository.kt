@@ -57,9 +57,8 @@ class RestApiRepository
         return result
     }
 
-    fun getNearbyLocations(lat: Double, long: Double): Observable<NearbySearchAPIResult> {
-        Log.e(lat.toString(), long.toString())
-        return nearbySearchService.getNearbyFitnessClubs(
+    fun getNearbyLocations(lat: Double, long: Double): Observable<NearbySearchAPIResult> =
+        nearbySearchService.getNearbyFitnessClubs(
             String.format(
                 Locale.US,
                 "%f,%f",
@@ -68,7 +67,7 @@ class RestApiRepository
             ),
             radius = "1000",
             type = "gym",
-            key= NearbySearchService.API_KEY
+            key = NearbySearchService.API_KEY
         )
-    }
+
 }
