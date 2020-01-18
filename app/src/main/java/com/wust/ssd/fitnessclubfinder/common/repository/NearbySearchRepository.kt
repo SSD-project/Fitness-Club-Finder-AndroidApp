@@ -66,10 +66,10 @@ class NearbySearchRepository(
         apiTimer = Timer()
         apiTimer?.scheduleAtFixedRate(
             timerTask {
-                if (!apiCallInProgress) apiCallLockFlag = false
-            }, 0, apiCallInterval * 1000
+                if (!apiCallInProgress) apiCallLockFlag = false//ATTENTION: lock for timer
+            }, 0, apiCallInterval * 1000000
         )
-        apiCallsOn = true
+//        apiCallsOn = true//TODO: turn on if you want to query in period of time
     }
 
     fun stopNearbyClubsApiCalls() {
