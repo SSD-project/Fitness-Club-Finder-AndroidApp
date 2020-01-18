@@ -59,7 +59,7 @@ class CameraViewModel @Inject constructor(
     }
 
 
-    private fun userLocationUpdate(data: Location) = location.postValue(data)
+    fun userLocationUpdate(data: Location) = location.postValue(data)
 
     private fun nearbyClubsUpdate(data: List<Club>) = nearbyClubs.postValue(data)
 

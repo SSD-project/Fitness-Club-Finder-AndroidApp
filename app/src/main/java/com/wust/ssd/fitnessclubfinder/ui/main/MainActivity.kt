@@ -1,6 +1,10 @@
 package com.wust.ssd.fitnessclubfinder.ui.main
 
+import android.annotation.SuppressLint
 import android.content.Intent
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
@@ -9,6 +13,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.MutableLiveData
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
@@ -27,18 +32,20 @@ import com.wust.ssd.fitnessclubfinder.ui.login.LoginActivity
 import java.lang.Exception
 import javax.inject.Inject
 
-class MainActivity : AppCompatActivity(), Injectable {
+class MainActivity : AppCompatActivity(), Injectable, LocationListener {
     private val TAG = this.javaClass.simpleName
 
 
     @Inject
     lateinit var mGoogleSignInClient: GoogleSignInClient
 
+    val userlocation = MutableLiveData<Location>()
 
     private lateinit var appBarConfiguration: AppBarConfiguration
 
     private var installRequested = false
 
+    @SuppressLint("MissingPermission")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -71,6 +78,12 @@ class MainActivity : AppCompatActivity(), Injectable {
         }
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
+
+
+        val locationManager =
+            this.getSystemService(LOCATION_SERVICE) as LocationManager
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0f, this)
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0f, this)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -106,7 +119,7 @@ class MainActivity : AppCompatActivity(), Injectable {
                 return
             }
         } catch (e: Exception) {
-            val message = when(e){
+            val message = when (e) {
                 is UnavailableArcoreNotInstalledException -> "Please install ARCore"
                 is UnavailableUserDeclinedInstallationException -> "Please install ARCore"
                 is UnavailableApkTooOldException -> "Please update ARCore"
@@ -114,7 +127,7 @@ class MainActivity : AppCompatActivity(), Injectable {
                 is UnavailableDeviceNotCompatibleException -> "This device does not support AR"
                 else -> "Failed to create AR session"
             }
-            Toast.makeText(this,message, Toast.LENGTH_LONG).show()
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show()
             Log.e(TAG, message)
 
         }
@@ -143,5 +156,13 @@ class MainActivity : AppCompatActivity(), Injectable {
         finish()
 
     }
+
+    override fun onLocationChanged(location: Location?) {
+        location?.let { userlocation.postValue(it) }
+    }
+
+    override fun onStatusChanged(p0: String?, p1: Int, p2: Bundle?) = Unit
+    override fun onProviderEnabled(p0: String?) = Unit
+    override fun onProviderDisabled(p0: String?) = Unit
 
 }

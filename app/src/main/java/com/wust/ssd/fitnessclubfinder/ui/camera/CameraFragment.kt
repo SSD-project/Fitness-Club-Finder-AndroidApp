@@ -22,10 +22,11 @@ import androidx.lifecycle.ViewModelProviders
 import com.wust.ssd.fitnessclubfinder.R
 import com.wust.ssd.fitnessclubfinder.common.CameraHelper
 import com.wust.ssd.fitnessclubfinder.di.Injectable
+import com.wust.ssd.fitnessclubfinder.ui.main.MainActivity
 import com.wust.ssd.fitnessclubfinder.utils.DrawableUtil
 import javax.inject.Inject
 
-class CameraFragment : Fragment(), Injectable, LocationListener {
+class CameraFragment : Fragment(), Injectable {
 
     private val TAG = "CameraFragment"
 
@@ -45,7 +46,6 @@ class CameraFragment : Fragment(), Injectable, LocationListener {
     private lateinit var clubsContainer: RelativeLayout
 
 
-    @SuppressLint("MissingPermission")
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
@@ -72,11 +72,13 @@ class CameraFragment : Fragment(), Injectable, LocationListener {
             })
         }
 
+        (activity as? MainActivity)?.userlocation?.observe(this, Observer {
+            viewModel?.onLocationChanged(it)
+            viewModel?.userLocationUpdate(it)
 
-        val locationManager =
-            activity?.getSystemService(AppCompatActivity.LOCATION_SERVICE) as LocationManager
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0f, this)
-        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0f, this)
+        })
+
+
 
 
     }
@@ -102,7 +104,6 @@ class CameraFragment : Fragment(), Injectable, LocationListener {
         camera.openBackgroundThread()
         viewModel?.compass?.onResume()
         viewModel?.markers?.observe(this, Observer { markers ->
-            Log.e("CameraFragment", "onResumeWorker")
 
             viewModel!!.runWorker(markers, activity!!)
         })
@@ -112,11 +113,6 @@ class CameraFragment : Fragment(), Injectable, LocationListener {
         }
     }
 
-    override fun onLocationChanged(userLocation: Location?) {
-        if (userLocation !== null && viewModel !== null)
-            viewModel!!.onLocationChanged(userLocation)
-
-    }
 
     override fun onStop() {
         super.onStop()
@@ -129,11 +125,6 @@ class CameraFragment : Fragment(), Injectable, LocationListener {
         viewModel?.compass?.onPause()
     }
 
-    override fun onStatusChanged(p0: String?, p1: Int, p2: Bundle?) {}
-
-    override fun onProviderEnabled(p0: String?) {}
-
-    override fun onProviderDisabled(p0: String?) {}
 
 
     inner class SurfaceTextureListener : TextureView.SurfaceTextureListener {
