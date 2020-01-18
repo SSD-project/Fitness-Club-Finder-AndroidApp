@@ -6,6 +6,7 @@ import android.util.Log
 import android.widget.Toast
 import com.wust.ssd.fitnessclubfinder.common.model.Club
 import com.wust.ssd.fitnessclubfinder.common.model.NearbySearchAPIResult
+import com.wust.ssd.fitnessclubfinder.utils.Fixtures
 import com.wust.ssd.fitnessclubfinder.utils.RxSchedulersFacade
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
@@ -31,7 +32,7 @@ class NearbySearchRepository(
     private var apiFailFlag = false
     private var fitnessClubs: List<Club>? = null
     private var apiTimer: Timer? = null
-    private var apiCallInterval: Long = 20
+    private var apiCallInterval: Long = 6
     private var apiCallsOn = false
 
     private fun callForNearbyClubsUpdate(data: Location) {
@@ -45,7 +46,11 @@ class NearbySearchRepository(
                     )
                     .subscribeOn(schedulers.computation())
                     .observeOn(schedulers.computation())
-                    .subscribe({ result -> handleNearbyClubsUpdate(result) },
+                    .subscribe({ result ->
+                        if(result.results.isNotEmpty())
+                        handleNearbyClubsUpdate(result)
+                        else handleNearbyClubsUpdate(Fixtures().prepareAPIResult())
+                    },
                         { error -> throw error })
             )
 
@@ -67,7 +72,7 @@ class NearbySearchRepository(
         apiTimer?.scheduleAtFixedRate(
             timerTask {
                 if (!apiCallInProgress) apiCallLockFlag = false//ATTENTION: lock for timer
-            }, 0, apiCallInterval * 1000000
+            }, 0, apiCallInterval * 1000
         )
 //        apiCallsOn = true//TODO: turn on if you want to query in period of time
     }
