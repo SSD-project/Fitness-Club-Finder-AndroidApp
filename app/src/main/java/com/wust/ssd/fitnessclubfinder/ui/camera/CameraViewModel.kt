@@ -51,10 +51,7 @@ class CameraViewModel @Inject constructor(
     var verticalViewAngle: Float? = null
     val compass = CompassSensor(context)
 
-    private lateinit var map: GoogleMap
-
-
-    val clubs = mutableListOf<ARMarker>()
+    private var map: GoogleMap? = null
 
 
     fun requestUserLocationUpdates() {
@@ -90,14 +87,16 @@ class CameraViewModel @Inject constructor(
         , activity: Activity
     ) {
 
-        markers.map { map.addMarker(createMapMarker(it)) }
 
-        val markerPosition = MarkerPositionHelper(horizontalViewAngle!!, verticalViewAngle!!)
+
+
         thread(start = true) {
             while (
                 true
             ) {
-                if (location.value !== null) {
+                if (location.value !== null && horizontalViewAngle !== null && verticalViewAngle !== null) {
+                    val markerPosition =
+                        MarkerPositionHelper(horizontalViewAngle!!, verticalViewAngle!!)
                     countBearingsAndDistances(markers, location.value!!)
                     val parallax = markerPosition.getVerticalParallax(compass.pitch)
                     val tilt = markerPosition.getTilt(parallax)
@@ -152,7 +151,7 @@ class CameraViewModel @Inject constructor(
                         val layoutParams = it.refresh()
                         val newIcon = updateMakerIcon(it)
                         activity.runOnUiThread {
-                            map.moveCamera(refreshedCameraPosition)
+                            map?.moveCamera(refreshedCameraPosition)
                             newIcon?.let { icon -> it.view.background = icon }
                             it.view.layoutParams = layoutParams
                             it.view.requestLayout()
@@ -192,9 +191,11 @@ class CameraViewModel @Inject constructor(
         return null
     }
 
-    fun setupMap(googleMap: GoogleMap) {
+    fun setupMap(
+        googleMap: GoogleMap
+    ) {
         map = googleMap
-
+        markers.value?.map { map!!.addMarker(createMapMarker(it)) }
     }
 
     private fun refreshedCameraPosition(
@@ -207,7 +208,7 @@ class CameraViewModel @Inject constructor(
             .Builder()
             .target(user)
             .tilt(tilt)
-            .zoom(18.0f)
+            .zoom(16.0f)
             .bearing(bearing)
             .build()
         return CameraUpdateFactory.newCameraPosition(cameraPosition)

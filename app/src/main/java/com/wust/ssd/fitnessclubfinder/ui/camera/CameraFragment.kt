@@ -3,10 +3,8 @@ package com.wust.ssd.fitnessclubfinder.ui.camera
 import android.graphics.SurfaceTexture
 import android.graphics.drawable.GradientDrawable
 import android.hardware.camera2.CameraDevice
-import android.location.Location
 import android.os.Bundle
 import android.util.DisplayMetrics
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.TextureView
 import android.view.View
@@ -95,19 +93,13 @@ class CameraFragment : Fragment(), Injectable, OnMapReadyCallback, GoogleMap.OnM
 
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        val root = inflater.inflate(R.layout.fragment_camera, container, false)
-        clubsContainer = root.findViewById(R.id.clubs_container)
-
-        textureView = root.findViewById(R.id.texture_view)
-
-        mapView = root.findViewById(R.id.map_container)
-
-        return root
-    }
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+    ): View? = inflater.inflate(R.layout.fragment_camera, container, false)
+        .also {
+            clubsContainer = it.findViewById(R.id.clubs_container)
+            textureView = it.findViewById(R.id.texture_view)
+            mapView = it.findViewById(R.id.map_container)
+        }
 
     private fun setupMap() =
         activity?.let { _ ->
@@ -136,7 +128,7 @@ class CameraFragment : Fragment(), Injectable, OnMapReadyCallback, GoogleMap.OnM
         camera.openBackgroundThread()
         viewModel?.compass?.onResume()
         viewModel?.markers?.observe(this, Observer { markers ->
-
+            if (map !== null) viewModel!!.setupMap(map!!)
             viewModel!!.runWorker(markers, activity!!)
         })
         when {
@@ -221,7 +213,9 @@ class CameraFragment : Fragment(), Injectable, OnMapReadyCallback, GoogleMap.OnM
     }
 
     override fun onMapLoaded() = Unit
-    override fun deactivate() { locationListener = null }
+    override fun deactivate() {
+        locationListener = null
+    }
 
     override fun activate(p0: LocationSource.OnLocationChangedListener?) {
         p0?.let { locationListener = it }
