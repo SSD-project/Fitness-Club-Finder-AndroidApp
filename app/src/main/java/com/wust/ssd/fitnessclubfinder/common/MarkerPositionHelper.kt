@@ -4,6 +4,10 @@ class MarkerPositionHelper(
     private val horizontalViewAngle: Float,
     private val verticalViewAngle: Float
 ) {
+    companion object {
+        private const val TILT = 60
+        private const val TILT_MARGIN = 15
+    }
 
     fun getHorizontalPosition(alpha: Float, bearing: Float): Float {
 
@@ -12,12 +16,12 @@ class MarkerPositionHelper(
             alpha - bearing > 180 -> alpha - 360
             else -> alpha
         }
-        return ((x - bearing) / horizontalViewAngle!! + .5f)
+        return ((x - bearing) / horizontalViewAngle + .5f)
     }
 
 
     fun getVerticalParallax(pitch: Float): Float =
-        (2 * (90 + pitch % 360) / verticalViewAngle!!).let {
+        (2 * (90 + pitch % 360) / verticalViewAngle).let {
             when {
                 it < -1 -> -1f
                 it > 1 -> 1f
@@ -44,4 +48,6 @@ class MarkerPositionHelper(
         if (parallax > 0) maxY + parallax * (minY - maxY) else maxY
 
     fun getMarginTop(y: Float, max: Float, min: Float) = max - y * (max - min)
+
+    fun getTilt(parallax: Float) = TILT - TILT_MARGIN * parallax
 }
