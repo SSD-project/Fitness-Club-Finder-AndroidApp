@@ -16,6 +16,7 @@ import com.wust.ssd.fitnessclubfinder.common.repository.RestApiRepository
 import com.wust.ssd.fitnessclubfinder.ui.camera.CameraFragmentComponent
 import com.wust.ssd.fitnessclubfinder.ui.login.LoginActivityComponent
 import com.wust.ssd.fitnessclubfinder.ui.main.MainActivityComponent
+import com.wust.ssd.fitnessclubfinder.utils.DrawableUtil
 import com.wust.ssd.fitnessclubfinder.utils.RxSchedulersFacade
 import dagger.Module
 import dagger.Provides
@@ -77,4 +78,7 @@ class AppModule {
 
     @Provides
     fun provideCameraHelper(app: App) = CameraHelper(app.applicationContext)
+
+    @Provides
+    fun provideDrawableUtil(app:App) = DrawableUtil(app.applicationContext)
 }

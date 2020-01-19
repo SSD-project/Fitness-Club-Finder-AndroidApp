@@ -5,12 +5,16 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.SurfaceTexture
 import android.hardware.camera2.*
+import android.hardware.camera2.CameraCharacteristics.*
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Size
 import android.view.Surface
 import androidx.core.app.ActivityCompat
 import java.util.*
+import kotlin.math.PI
+import kotlin.math.atan
+
 
 class CameraHelper(private val context: Context) {
 
@@ -22,16 +26,17 @@ class CameraHelper(private val context: Context) {
     private var backgroundThread: HandlerThread? = null
     private var cameraDevice: CameraDevice? = null
     private var cameraCaptureSession: CameraCaptureSession? = null
-
+    private var cameraCharacteristics: CameraCharacteristics? = null
+    private var captureRequest: CaptureRequest? = null
 
     fun setupCamera() {
         try {
             cameraManager.cameraIdList.forEach {
                 val cameraCharacteristics = cameraManager.getCameraCharacteristics(it)
-                if (cameraCharacteristics.get(CameraCharacteristics.LENS_FACING) == CameraMetadata.LENS_FACING_BACK) {
-                    cameraCharacteristics[CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE]
+                if (cameraCharacteristics.get(LENS_FACING) == CameraMetadata.LENS_FACING_BACK) {
+                    cameraCharacteristics[SENSOR_INFO_PHYSICAL_SIZE]
                     val streamConfigurationMap =
-                        cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+                        cameraCharacteristics.get(SCALER_STREAM_CONFIGURATION_MAP)
                     previewSize =
                         streamConfigurationMap?.getOutputSizes(SurfaceTexture::class.java)!![0]
                     this.cameraId = it
@@ -49,11 +54,35 @@ class CameraHelper(private val context: Context) {
                     Manifest.permission.CAMERA
                 ) == PackageManager.PERMISSION_GRANTED
             ) {
-                cameraManager.openCamera(cameraId.toString(), stateCallback, backgroundHandler)
+                cameraId?.let { id ->
+                    cameraManager.openCamera(id, stateCallback, backgroundHandler)
+                    cameraCharacteristics = cameraManager.getCameraCharacteristics(id)
+                }
+
             }
         } catch (e: CameraAccessException) {
             e.printStackTrace()
         }
+    }
+
+
+    fun getHorizontalViewAngle(): Float? {
+        val lensFocalLength = cameraCharacteristics?.get(LENS_INFO_AVAILABLE_FOCAL_LENGTHS)?.get(0)
+        val sensorPhysicalSize = cameraCharacteristics?.get(SENSOR_INFO_PHYSICAL_SIZE)?.width
+
+        if (lensFocalLength !== null && sensorPhysicalSize !== null) {
+            return (180 / PI).toFloat() * (2F * atan(sensorPhysicalSize / (2F * lensFocalLength)))
+        }
+        return null
+    }
+
+    fun getVerticalViewAngle(): Float? {
+        val lensFocalLength = cameraCharacteristics?.get(LENS_INFO_AVAILABLE_FOCAL_LENGTHS)?.get(0)
+        val sensorPhysicalSize = cameraCharacteristics?.get(SENSOR_INFO_PHYSICAL_SIZE)?.height
+        if (lensFocalLength !== null && sensorPhysicalSize !== null) {
+            return (180 / PI).toFloat() * 2F * atan(sensorPhysicalSize / (2F * lensFocalLength))
+        }
+        return null
     }
 
     fun openBackgroundThread() {
@@ -125,14 +154,14 @@ class CameraHelper(private val context: Context) {
             if (cameraDevice == null) return
 
             try {
-                val captureRequest =
+                captureRequest =
                     cameraDevice!!
                         .createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
                         .apply { addTarget(previewSurface) }
                         .build()
                 cameraCaptureSession = p0
                 cameraCaptureSession!!.setRepeatingRequest(
-                    captureRequest,
+                    captureRequest!!,
                     null,
                     backgroundHandler
                 )

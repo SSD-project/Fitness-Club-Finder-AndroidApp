@@ -1,48 +1,224 @@
 package com.wust.ssd.fitnessclubfinder.ui.camera
 
-import android.annotation.SuppressLint
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
+import android.app.Activity
+import android.content.Context
+import android.graphics.drawable.BitmapDrawable
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.location.Location
-import android.text.TextPaint
-import android.util.DisplayMetrics
 import android.util.Log
-import android.util.Size
-import android.widget.Toast
-import androidx.lifecycle.LiveData
+import android.widget.RelativeLayout
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.google.android.gms.maps.CameraUpdate
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MarkerOptions
+import com.wust.ssd.fitnessclubfinder.R
+import com.wust.ssd.fitnessclubfinder.common.ARMarker
+import com.wust.ssd.fitnessclubfinder.common.MarkerPositionHelper
 import com.wust.ssd.fitnessclubfinder.common.model.Club
 import com.wust.ssd.fitnessclubfinder.common.model.NearbySearchAPIResult
-import com.wust.ssd.fitnessclubfinder.common.model.UserLocation
 import com.wust.ssd.fitnessclubfinder.common.repository.NearbyClubsObserver
 import com.wust.ssd.fitnessclubfinder.common.repository.NearbySearchRepository
+import com.wust.ssd.fitnessclubfinder.utils.DrawableUtil
 import io.reactivex.disposables.CompositeDisposable
 import javax.inject.Inject
+import kotlin.concurrent.thread
 import kotlin.math.abs
 
-class CameraViewModel @Inject constructor(val nearbySearchRepository: NearbySearchRepository) :
+class CameraViewModel @Inject constructor(
+    private val context: Context,
+    val nearbySearchRepository: NearbySearchRepository,
+    private val drawableUtil: DrawableUtil
+) :
     ViewModel() {
 
-    private val _text = MutableLiveData<String>().apply {
-        value = "This is camera Fragment"
-    }
     private var disposable = CompositeDisposable()
-    val location = MutableLiveData<UserLocation>()
+    val location = MutableLiveData<Location>()
     val nearbyClubs = MutableLiveData<List<Club>>()
-    val text: LiveData<String> = _text
+    val markers = MutableLiveData<List<ARMarker>>()
+
+    var screenWidth: Int? = null
+    var screenHeight: Int? = null
+    lateinit var clubsContainer: RelativeLayout
+
+    var horizontalViewAngle: Float? = null
+    var verticalViewAngle: Float? = null
+    val compass = CompassSensor(context)
+
+    private var map: GoogleMap? = null
+
 
     fun requestUserLocationUpdates() {
         disposable.add(nearbySearchRepository.subscribe(DataObserver()))
     }
 
-    private fun userLocationUpdate(data: UserLocation) = location.postValue(data)
+
+    fun userLocationUpdate(data: Location) = location.postValue(data)
 
     private fun nearbyClubsUpdate(data: List<Club>) = nearbyClubs.postValue(data)
 
-    fun onLocationChanged(userLocation: Location) =
+    private fun markersUpdate(data: List<ARMarker>) = markers.postValue(data)
+
+    private fun countBearingsAndDistances(markers: List<ARMarker>, location: Location) {
+        markers.forEach {
+            val loc = Location(it.club.name)
+            loc.latitude = it.club.geometry.location.lat
+            loc.longitude = it.club.geometry.location.lng
+            it.bearing = location.bearingTo(loc)
+            it.distance = location.distanceTo(loc)
+        }
+    }
+
+
+    private fun getVerticalPosition(
+        distance: Float,
+        maxDist: Double,
+        minDist: Double
+    ) = ((distance - minDist) / (maxDist - minDist)).toFloat()
+
+    fun runWorker(
+        markers: List<ARMarker>
+        , activity: Activity
+    ) {
+
+
+
+
+        thread(start = true) {
+            while (
+                true
+            ) {
+                if (location.value !== null && horizontalViewAngle !== null && verticalViewAngle !== null) {
+                    val markerPosition =
+                        MarkerPositionHelper(horizontalViewAngle!!, verticalViewAngle!!)
+                    countBearingsAndDistances(markers, location.value!!)
+                    val parallax = markerPosition.getVerticalParallax(compass.pitch)
+                    val tilt = markerPosition.getTilt(parallax)
+                    val refreshedCameraPosition =
+                        refreshedCameraPosition(location.value!!, compass.azimuth, tilt)
+                    val maxY = 1850f//TODO get height from parent container in the air
+                    val minY = 20f
+                    val minVerticalPosition =
+                        markerPosition.getMinVerticalPosition(parallax, minY, maxY)
+
+                    val maxVerticalPosition =
+                        markerPosition.getMaxVerticalPosition(parallax, minY, maxY)
+
+
+                    val maxDist = markerPosition.getBoundaryDistances(true, markers)
+                    val minDist = markerPosition.getBoundaryDistances(false, markers)
+                    markers.map {
+                        it.marginLeft =
+                            markerPosition.getHorizontalPosition(
+                                it.bearing!!,
+                                compass.azimuth
+                            ).let { marginLeft ->
+                                when {
+                                    marginLeft < 0 -> {
+                                        it.icon = ARMarker.ARROW_LEFT
+                                        0.01F//set to the left margin
+                                    }
+                                    marginLeft > 1 -> {
+                                        it.icon = ARMarker.ARROW_RIGHT
+                                        0.9F//set to the right margin
+                                    }
+                                    else -> {
+                                        it.icon = ARMarker.MARKER_DEFAULT
+                                        marginLeft
+                                    }
+                                }
+                            } * screenWidth!!
+
+
+                        val relativeVerticalPosition =
+                            getVerticalPosition(it.distance!!, maxDist, minDist)
+
+
+                        it.marginTop =
+                            markerPosition.getMarginTop(
+                                relativeVerticalPosition,
+                                maxVerticalPosition,
+                                minVerticalPosition
+                            )
+
+
+                        val layoutParams = it.refresh()
+                        val newIcon = updateMakerIcon(it)
+                        activity.runOnUiThread {
+                            map?.moveCamera(refreshedCameraPosition)
+                            newIcon?.let { icon -> it.view.background = icon }
+                            it.view.layoutParams = layoutParams
+                            it.view.requestLayout()
+                        }
+                    }
+
+
+                    Thread.sleep(66)
+                }
+            }
+        }
+    }
+
+    private fun createMapMarker(m: ARMarker) =
+        MarkerOptions()
+        .position(
+            LatLng(
+                m.club.geometry.location.lat,
+                m.club.geometry.location.lng
+            )
+        )
+        .visible(true)
+        .title(m.club.name)
+
+
+    private fun updateMakerIcon(marker: ARMarker): BitmapDrawable? {
+        if (marker.icon !== marker.currentIcon) {
+
+            marker.currentIcon = marker.icon
+            return drawableUtil.importResource(
+                marker.icon,
+                R.drawable::class.java,
+                64,
+                64
+            )
+        }
+        return null
+    }
+
+    fun setupMap(
+        googleMap: GoogleMap
+    ) {
+        map = googleMap
+        markers.value?.map { map!!.addMarker(createMapMarker(it)) }
+    }
+
+    private fun refreshedCameraPosition(
+        userLocation: Location,
+        bearing: Float,
+        tilt: Float
+    ): CameraUpdate {
+        val user = LatLng(userLocation.latitude, userLocation.longitude)
+        val cameraPosition = CameraPosition
+            .Builder()
+            .target(user)
+            .tilt(tilt)
+            .zoom(16.0f)
+            .bearing(bearing)
+            .build()
+        return CameraUpdateFactory.newCameraPosition(cameraPosition)
+
+
+    }
+
+    fun onLocationChanged(userLocation: Location) {
+        userLocationUpdate(userLocation)
+
         nearbySearchRepository.apply {
             if (lastLocation === null ||
                 abs(userLocation.latitude - lastLocation!!.latitude) >= 0.00002 ||
@@ -55,7 +231,7 @@ class CameraViewModel @Inject constructor(val nearbySearchRepository: NearbySear
             }
             this.next()
         }
-
+    }
 
     inner class DataObserver : NearbyClubsObserver() {
 
@@ -66,43 +242,76 @@ class CameraViewModel @Inject constructor(val nearbySearchRepository: NearbySear
 
         override fun onComplete() {}
         override fun onNext(t: NearbySearchAPIResult) {
-            if (t.results.isNotEmpty())
+            if (t.results.isNotEmpty()) {
                 nearbyClubsUpdate(t.results)
+
+                val arMarkers = t.results.map { club ->
+                    ARMarker(context, club)
+                }
+
+                if (markers.value === null || isEqualsToMarkers(t))
+                    markersUpdate(arMarkers)
+            }
         }
+
+        private fun isEqualsToMarkers(t: NearbySearchAPIResult) =
+            t.results.map { it.id } === markers.value!!.map { it.club.id }
 
     }
 
-    fun createBitmapWithClubs(displayMetrics: DisplayMetrics, previewSize:Size): Bitmap =
-        createCircle(previewSize, 2000F, 2000F, displayMetrics)
 
-    private fun createCircle(
-        size: Size,
-        x: Float,
-        y: Float,
-        displayMetrics: DisplayMetrics
-    ): Bitmap {
-        val overlay = Bitmap.createBitmap(
-            size.width,
-            size.height,
-            Bitmap.Config.ARGB_8888
+    inner class CompassSensor(context: Context) : SensorEventListener {
+
+        var azimuth: Float = 0F
+        var pitch: Float = 0F
+        var roll: Float = 0F
+
+        private var sensorManager: SensorManager =
+            context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        private var accelerometer: Sensor
+
+        init {
+            accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION)
+            sensorManager.registerListener(
+                this, accelerometer, SensorManager.SENSOR_DELAY_GAME
+            )
+        }
+
+        override fun onAccuracyChanged(p0: Sensor?, p1: Int) = Unit
+
+        override fun onSensorChanged(event: SensorEvent?) {
+            event?.let { e ->
+                azimuth = exponentialSmoothing360(azimuth, e.values[0])
+                pitch = exponentialSmoothing180(pitch, e.values[1])
+                roll = exponentialSmoothing180(roll, e.values[2])
+
+            }
+
+        }
+
+        fun onResume() = sensorManager.registerListener(
+            this, accelerometer, SensorManager.SENSOR_DELAY_GAME
         )
-        val canvas = Canvas(overlay)
 
+        fun onPause() = sensorManager.unregisterListener(this)
 
-        val paint = Paint().apply {
-            color = Color.GREEN
-
+        private fun exponentialSmoothing360(old: Float, measure: Float): Float = when {
+            old - measure > 180 -> measure + 360
+            measure - old > 180 -> measure - 360
+            else -> measure
+        }.let {
+            (it + .2F * (old - it) + 360) % 360
         }
-        val textPaint = TextPaint().apply {
-            textSize = (45 * displayMetrics.density)
-            isAntiAlias = true
-            style = Paint.Style.FILL_AND_STROKE
-            color = Color.MAGENTA
 
+        private fun exponentialSmoothing180(old: Float, measure: Float): Float = when {
+            old - measure > 180 -> measure + 360
+            measure - old > 180 -> measure - 360
+            else -> measure
+        }.let {
+            (it + 0.2F * (old - it) + 540) % 360 - 180
         }
-        canvas.drawCircle(x, y, 50F, paint)
-        canvas.drawText("Super Silownia!", x, y, textPaint)
 
-        return overlay
     }
+
+
 }

@@ -1,14 +1,22 @@
 package com.wust.ssd.fitnessclubfinder.ui.main
 
+import android.Manifest.permission.ACCESS_FINE_LOCATION
+import android.Manifest.permission.CAMERA
+import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
 import android.os.Bundle
-import android.util.Log
 import android.view.Menu
 import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
+import androidx.core.content.ContextCompat
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.MutableLiveData
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
@@ -18,26 +26,25 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.snackbar.Snackbar
-import com.google.ar.core.ArCoreApk
-import com.google.ar.core.exceptions.*
 import com.wust.ssd.fitnessclubfinder.R
-import com.wust.ssd.fitnessclubfinder.common.CameraPermissionHelper
+import com.wust.ssd.fitnessclubfinder.common.PermissionHelper
 import com.wust.ssd.fitnessclubfinder.di.Injectable
 import com.wust.ssd.fitnessclubfinder.ui.login.LoginActivity
-import java.lang.Exception
+import java.util.jar.Manifest
 import javax.inject.Inject
 
-class MainActivity : AppCompatActivity(), Injectable {
+class MainActivity : AppCompatActivity(), Injectable, LocationListener {
     private val TAG = this.javaClass.simpleName
 
 
     @Inject
     lateinit var mGoogleSignInClient: GoogleSignInClient
 
+    val userlocation = MutableLiveData<Location>()
 
     private lateinit var appBarConfiguration: AppBarConfiguration
 
-    private var installRequested = false
+    private val permissionHelper = PermissionHelper(this)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,11 +52,6 @@ class MainActivity : AppCompatActivity(), Injectable {
         val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
 
-        val fab: FloatingActionButton = findViewById(R.id.fab)
-        fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                .setAction("Action", null).show()
-        }
         val drawerLayout: DrawerLayout = findViewById(R.id.drawer_layout)
         val navView: NavigationView = findViewById(R.id.nav_view)
         val navController = findNavController(R.id.nav_host_fragment)
@@ -71,6 +73,29 @@ class MainActivity : AppCompatActivity(), Injectable {
         }
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
+
+
+        setupPermissions()
+        setupLocationListener()
+
+    }
+
+    private fun setupLocationListener() =
+        if (ContextCompat.checkSelfPermission(
+                this,
+                ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            val locationManager =
+                this.getSystemService(LOCATION_SERVICE) as LocationManager
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0f, this)
+            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0f, this)
+        } else null
+
+    private fun setupPermissions() {
+        val permissionsRequired = arrayOf(CAMERA, ACCESS_FINE_LOCATION)
+        if (permissionHelper.hasPermissions(permissionsRequired))
+            permissionHelper.requestPermissions(permissionsRequired)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -94,36 +119,6 @@ class MainActivity : AppCompatActivity(), Injectable {
             startActivity(Intent(this, LoginActivity::class.java))
         }
 
-    override fun onResume() {
-        super.onResume()
-        try {
-            if (ArCoreApk.getInstance().requestInstall(
-                    this,
-                    !installRequested
-                ) === ArCoreApk.InstallStatus.INSTALL_REQUESTED
-            ) {
-                installRequested = true
-                return
-            }
-        } catch (e: Exception) {
-            val message = when(e){
-                is UnavailableArcoreNotInstalledException -> "Please install ARCore"
-                is UnavailableUserDeclinedInstallationException -> "Please install ARCore"
-                is UnavailableApkTooOldException -> "Please update ARCore"
-                is UnavailableSdkTooOldException -> "Please update this app"
-                is UnavailableDeviceNotCompatibleException -> "This device does not support AR"
-                else -> "Failed to create AR session"
-            }
-            Toast.makeText(this,message, Toast.LENGTH_LONG).show()
-            Log.e(TAG, message)
-
-        }
-        //TODO: refactor CameraPermissionHelper, use DI...
-        if (!CameraPermissionHelper().hasCameraPermission(this)) {
-            CameraPermissionHelper().requestCameraPermission(this)
-            return
-        }
-    }
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
@@ -131,17 +126,15 @@ class MainActivity : AppCompatActivity(), Injectable {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        Toast.makeText(
-            this,
-            "Camera permission is needed to run this application",
-            Toast.LENGTH_LONG
-        )
-            .show()
-        if (!CameraPermissionHelper().shouldShowRequestPermissionRationale(this)) {
-            CameraPermissionHelper().launchPermissionSettings(this)
-        }
-        finish()
-
+        permissionHelper.onRequestPermissionResult(permissions, grantResults)
     }
+
+    override fun onLocationChanged(location: Location?) {
+        location?.let { userlocation.postValue(it) }
+    }
+
+    override fun onStatusChanged(p0: String?, p1: Int, p2: Bundle?) = Unit
+    override fun onProviderEnabled(p0: String?) = Unit
+    override fun onProviderDisabled(p0: String?) = Unit
 
 }
