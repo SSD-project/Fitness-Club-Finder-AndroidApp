@@ -1,7 +1,6 @@
 package com.wust.ssd.fitnessclubfinder.ui.main
 
-import android.Manifest.permission.ACCESS_FINE_LOCATION
-import android.Manifest.permission.CAMERA
+import android.Manifest.permission.*
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -93,7 +92,13 @@ class MainActivity : AppCompatActivity(), Injectable, LocationListener {
         } else null
 
     private fun setupPermissions() {
-        val permissionsRequired = arrayOf(CAMERA, ACCESS_FINE_LOCATION)
+        val permissionsRequired = arrayOf(
+            CAMERA,
+            ACCESS_FINE_LOCATION,
+            ACCESS_COARSE_LOCATION,
+            ACCESS_NETWORK_STATE,
+            INTERNET
+        )
         if (permissionHelper.hasPermissions(permissionsRequired))
             permissionHelper.requestPermissions(permissionsRequired)
     }
