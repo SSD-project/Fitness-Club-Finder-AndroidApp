@@ -1,5 +1,6 @@
 package com.wust.ssd.fitnessclubfinder.ui.camera
 
+import android.Manifest
 import android.graphics.SurfaceTexture
 import android.graphics.drawable.GradientDrawable
 import android.hardware.camera2.CameraDevice
@@ -11,6 +12,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.RelativeLayout
+import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
@@ -186,7 +188,15 @@ class CameraFragment : Fragment(), Injectable, OnMapReadyCallback, GoogleMap.OnM
     }
 
     override fun onMapReady(googleMap: GoogleMap?) {
-
+        activity?.let {
+            ActivityCompat.requestPermissions(
+                it, arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ),
+                301
+            )
+        }
         googleMap?.let {
             map = googleMap
             viewModel?.setupMap(it)
